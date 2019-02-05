@@ -5,11 +5,14 @@ export ZSH=$HOME/.oh-my-zsh
 POWERLEVEL9K_LEFT_PROMPT_ELEMEMTS=(ssh context dir vcs)
 POWERLEVEL9K_RIGHT_PROMPT_ELEMENTS=(status background_jobs time os_icon)
 POWERLEVEL9K_MODE=nerdfont-complete
+POWERLEVEL9K_LEFT_SEGMENT_SEPARATOR=$'\ue0c6 '
+POWERLEVEL9K_RIGHT_SEGMENT_SEPARATOR=$'\ue0c7 '
+
 ZSH_THEME="powerlevel9k/powerlevel9k"
 plugins=(
-  osx rustup rust cargo pip docker
+  osx rustup rust cargo pip
   zsh-syntax-highlighting
-  go z
+  go docker z
 )
 source $ZSH/oh-my-zsh.sh
 
@@ -48,7 +51,7 @@ fi
 export FZF_DEFAULT_OPTS="--preview 'pygmentize -O style=monokai {}'"
 
 # Go
-export GOPATH=$HOME/go-workspace
+export GOPATH=$HOME/Workspace/go
 export GIT_TERMINAL_PROMPT=1
 export PATH=$GOPATH/bin:$PATH
 
@@ -64,3 +67,4 @@ export HOMEBREW_BOTTLE_DOMAIN=https://mirrors.tuna.tsinghua.edu.cn/homebrew-bott
 # Customize
 alias ls='exa --git --grid --long --color-scale'
 alias hl='pygmentize -O style=monokai'
+alias vim=emacs  # Practising emacs currently
