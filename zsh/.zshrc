@@ -8,8 +8,9 @@ POWERLEVEL9K_MODE=nerdfont-complete
 POWERLEVEL9K_LEFT_SEGMENT_SEPARATOR=$'\ue0c6 '
 POWERLEVEL9K_RIGHT_SEGMENT_SEPARATOR=$'\ue0c7 '
 POWERLEVEL9K_PROMPT_ON_NEWLINE=true
+POWERLEVEL9K_RPROMPT_ON_NEWLINE=true
 POWERLEVEL9K_MULTILINE_FIRST_PROMPT_PREFIX=''
-POWERLEVEL9K_MULTILINE_LAST_PROMPT_PREFIX=$'%F{black}\ue0c6%f  '
+POWERLEVEL9K_MULTILINE_LAST_PROMPT_PREFIX=$'%K{black} %k%F{black}\ue0c6%f  '
 
 ZSH_THEME="powerlevel9k/powerlevel9k"
 plugins=(
@@ -70,4 +71,4 @@ export HOMEBREW_BOTTLE_DOMAIN=https://mirrors.tuna.tsinghua.edu.cn/homebrew-bott
 # Customize
 alias ls='exa --git --grid --long --color-scale'
 alias hl='pygmentize -O style=monokai'
-alias vim=emacs  # Practising emacs currently
+alias view="vim -R '+set nomodifiable'"
