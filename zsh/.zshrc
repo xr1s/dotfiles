@@ -11,13 +11,14 @@ POWERLEVEL9K_PROMPT_ON_NEWLINE=true
 POWERLEVEL9K_RPROMPT_ON_NEWLINE=true
 POWERLEVEL9K_MULTILINE_FIRST_PROMPT_PREFIX=''
 POWERLEVEL9K_MULTILINE_LAST_PROMPT_PREFIX=$'%K{black} %k%F{black}\ue0c6%f  '
-
 ZSH_THEME="powerlevel9k/powerlevel9k"
+
 plugins=(
-  osx rustup rust cargo pip
+  rustup rust cargo pip cabal
   zsh-syntax-highlighting
   go docker z
 )
+
 source $ZSH/oh-my-zsh.sh
 
 # Zsh Syntax Highlighting
@@ -55,15 +56,16 @@ fi
 export FZF_DEFAULT_OPTS="--preview 'pygmentize -O style=monokai {}'"
 
 # Go
-export GOPATH=$HOME/Workspace/go
+export GOROOT="$HOME/.local/go"
+export GOPATH="$HOME/Workspace/go"
 export GIT_TERMINAL_PROMPT=1
-export PATH=$GOPATH/bin:$PATH
+export PATH="$GOPATH/bin:$GOROOT/bin${PATH:+:$PATH}"
 
 # Haskell
-export PATH=$HOME/.cabal/bin:$PATH
+export PATH="$HOME/.cabal/bin:$HOME/.ghcup/bin${PATH:+:$PATH}"
 
 # Rust
-export PATH=$HOME/.cargo/bin:$PATH
+source "$HOME/.cargo/env"
 
 # Homebrew
 export HOMEBREW_BOTTLE_DOMAIN=https://mirrors.tuna.tsinghua.edu.cn/homebrew-bottles
@@ -72,3 +74,8 @@ export HOMEBREW_BOTTLE_DOMAIN=https://mirrors.tuna.tsinghua.edu.cn/homebrew-bott
 alias ls='exa --git --grid --long --color-scale'
 alias hl='pygmentize -O style=monokai'
 alias view="vim -R '+set nomodifiable'"
+
+export PATH="$HOME/.local/bin${PATH:+:$PATH}"
+export LD_LIBRARY_PATH="$HOME/.local/lib:$HOME/.local/lib64${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+export CPATH="$HOME/.local/include${CPATH:+:$CPATH}"
+export LDFLAGS="-L$HOME/.local/lib -L$HOME/.local/lib64 $LDFLAGS"
