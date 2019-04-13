@@ -1,0 +1,13 @@
+#!/usr/bin/zsh
+
+set -o errexit
+
+# You may have to install oh-my-zsh first.
+
+wget https://sh.rustup.rs -O rustup.sh
+sh rustup.sh --verbose --default-toolchain nightly
+rm rustup.sh
+if (( ${+ZSH} )); then
+  mkdir --parent $ZSH/custom/rustup
+  rustup completions zsh > $ZSH/custom/rustup/_rustup
+fi

@@ -1,6 +1,6 @@
 #!/usr/bin/sh
 
 cargo install bat  # Syntax highlighted cat|less
-cargo install exa  # Alternative for ls
-cargo install ripgrep  # Alternative for grep
-cargo install fd-find  # Alternative for find
+cargo install exa  # Alternative to ls
+cargo install ripgrep  # Alternative to grep
+cargo install fd-find  # Alternative to find
