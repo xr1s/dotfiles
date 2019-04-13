@@ -17,7 +17,7 @@ BUILD_DIRECTORY = 'bin'
 
 
 def CollectHeaderPath(lang):
-    cmd = ['gcc', '-E', '-v', '-'] + ['-x' + lang]
+    cmd = ['gcc', '-E', '-v', '-x' + lang, '-']
     info = subprocess.Popen(cmd, stderr=subprocess.PIPE)
     args = info.stderr.read().decode().splitlines()
     fst = args.index('#include "..." search starts here:')
@@ -29,9 +29,9 @@ def CollectHeaderPath(lang):
             header = header[:-22]
         include.extend(['-isystem', header.strip()])
     if lang == 'c':
-        return shlex.split(os.environ['CFLAGS'])
+        include.extend(shlex.split(os.environ.get('CFLAGS', '')))
     if lang == 'c++':
-        return shlex.split(os.environ['CXXFLAGS'])
+        include.extend(shlex.split(os.environ.get('CXXFLAGS', '')))
     return include
 
 
