@@ -2,15 +2,34 @@ export TERM=xterm-256color
 export ZSH=$HOME/.oh-my-zsh
 
 # Powerlevel9k
-POWERLEVEL9K_LEFT_PROMPT_ELEMENTS=(ssh context dir vcs)
-POWERLEVEL9K_RIGHT_PROMPT_ELEMENTS=(status background_jobs time os_icon)
-POWERLEVEL9K_MODE=nerdfont-complete
-POWERLEVEL9K_LEFT_SEGMENT_SEPARATOR=$'\ue0c6 '
-POWERLEVEL9K_RIGHT_SEGMENT_SEPARATOR=$'\ue0c7 '
-POWERLEVEL9K_PROMPT_ON_NEWLINE=true
-POWERLEVEL9K_RPROMPT_ON_NEWLINE=true
-POWERLEVEL9K_MULTILINE_FIRST_PROMPT_PREFIX=''
-POWERLEVEL9K_MULTILINE_LAST_PROMPT_PREFIX=$'%K{black} %k%F{black}\ue0c6%f  '
+POWERLEVEL9K_MODE='nerdfont-complete'
+POWERLEVEL9K_LEFT_SEGMENT_SEPARATOR=''
+POWERLEVEL9K_RIGHT_SEGMENT_SEPARATOR=''
+POWERLEVEL9K_CUSTOM_EMOJI='prompt_emoji'
+POWERLEVEL9K_CUSTOM_EMOJI_BACKGROUND='white'
+POWERLEVEL9K_CUSTOM_EMOJI_FOREGROUND='black'
+function prompt_emoji() {
+  readonly EMOJI=(
+    '_(´ཀ`」 ∠)__'
+    "~o(〃'▽ '〃)o"
+    '( ￣ー￣)人(^▽ ^ )击掌'
+    '( *・ω・)✄╰ひ╯'
+    'へ(._へ)sᴋʀ'
+    '(งᵒ̌皿ᵒ̌)ง⁼³₌₃'
+    '｡･ﾟﾟ･(>д<;)･ﾟﾟ･｡'
+    '(╯°Д°)╯︵ ┻━┻'
+    '๛ ก(ｰ̀ωｰ́ก)'
+    'ʕง•ᴥ•ʔง'
+  )
+  echo "${EMOJI[$$ % ${#EMOJI[@]} + 1]}"
+}
+# Windows Terminal will transparent 'black' background, use color code
+POWERLEVEL9K_CONTEXT_DEFAULT_BACKGROUND='233'
+POWERLEVEL9K_STATUS_OK_BACKGROUND='233'
+POWERLEVEL9K_OS_ICON_BACKGROUND='233'
+
+POWERLEVEL9K_LEFT_PROMPT_ELEMENTS=(ssh context dir dir_writable newline custom_emoji vcs)
+POWERLEVEL9K_RIGHT_PROMPT_ELEMENTS=(status background_jobs command_execution_time time os_icon)
 ZSH_THEME="powerlevel9k/powerlevel9k"
 
 plugins=(
@@ -52,30 +71,27 @@ if (( ${+ZSH_HIGHLIGHT_STYLES} )); then
   ZSH_HIGHLIGHT_STYLES[double-hyphen-option]='fg=007'
 fi
 
-# Fuzzy Finder
-export FZF_DEFAULT_OPTS="--preview 'pygmentize -O style=monokai {}'"
-
-# Go
-export GOROOT="$HOME/.local/go"
-export GOPATH="$HOME/Workspace/go"
-export GIT_TERMINAL_PROMPT=1
-export PATH="$GOPATH/bin:$GOROOT/bin${PATH:+:$PATH}"
-
-# Haskell
-export PATH="$HOME/.cabal/bin:$HOME/.ghcup/bin${PATH:+:$PATH}"
-
-# Rust
-source "$HOME/.cargo/env"
-
-# Homebrew
-export HOMEBREW_BOTTLE_DOMAIN=https://mirrors.tuna.tsinghua.edu.cn/homebrew-bottles
+# Initialize windows proxies
+if uname -r | grep -iq microsoft
+then
+  export HOSTALIASES="$HOME/.config/etc/hosts"
+  WINDOWS=$(cat /etc/resolv.conf | grep nameserver | awk '{print $2}')
+  git config --global http.proxy $WINDOWS:8001
+  git config --global https.proxy $WINDOWS:8001
+  sed -i "s/^windows.*$/windows $WINDOWS/g" "$HOME/.config/etc/hosts"
+  function proxy() {
+    if [[ $1 == 'off' ]]
+    then
+      unset http_proxy https_proxy socks5_proxy
+    else
+      export http_proxy=http://$WINDOWS:8001
+      export https_proxy=http://$WINDOWS:8001
+      export socks5_proxy=socks5://$WINDOWS:1081
+    fi
+  }
+fi
 
 # Customize
 alias ls='exa --git --grid --long --color-scale'
 alias hl='pygmentize -O style=monokai'
 alias view="vim -R '+set nomodifiable'"
-
-export PATH="$HOME/.local/bin${PATH:+:$PATH}"
-export LD_LIBRARY_PATH="$HOME/.local/lib:$HOME/.local/lib64${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
-export CPATH="$HOME/.local/include${CPATH:+:$CPATH}"
-export LDFLAGS="-L$HOME/.local/lib -L$HOME/.local/lib64 $LDFLAGS"

@@ -28,10 +28,7 @@ def CollectHeaderPath(lang):
         if header.endswith('(framework directory)'):
             header = header[:-22]
         include.extend(['-isystem', header.strip()])
-    if lang == 'c':
-        include.extend(shlex.split(os.environ.get('CFLAGS', '')))
-    if lang == 'c++':
-        include.extend(shlex.split(os.environ.get('CXXFLAGS', '')))
+    include.extend(shlex.split(os.environ.get('YCMFLAGS', '')))
     return include
 
 

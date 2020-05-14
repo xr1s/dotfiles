@@ -1,16 +1,16 @@
 " Vim-Plug
 call plug#begin('~/.vim/plugged')
-Plug 'Valloric/YouCompleteMe', {
-  \'do': './install.py --clang-completer --rust-completer --go-completer --java-completer',
-  \'for': ['c', 'cpp', 'python', 'rust', 'go', 'java'],
-  \}
-Plug 'w0rp/ale'
+Plug 'flazz/vim-colorschemes'
+Plug 'sheerun/vim-polyglot'
+Plug 'thinca/vim-quickrun'
+Plug 'tpope/vim-fugitive'
 Plug 'vim-airline/vim-airline'
 Plug 'vim-airline/vim-airline-themes'
-Plug 'Reewr/vim-monokai-phoenix'
-Plug 'octol/vim-cpp-enhanced-highlight'
-Plug 'rust-lang/rust.vim'
-Plug 'solarnz/thrift.vim'
+Plug 'w0rp/ale'
+Plug 'ycm-core/YouCompleteMe', {
+\ 'do': './install.py --clang-completer --rust-completer --java-completer --go-completer',
+\ 'for':  ['c', 'cpp', 'python', 'rust', 'java', 'go', 'kotlin'],
+\}
 call plug#end()
 
 set nocompatible
@@ -20,7 +20,13 @@ filetype plugin on
 filetype indent on
 syntax on
 
-set number
+" Move cursor
+noremap <expr> j v:count ? 'j' : 'gj'
+noremap <expr> k v:count ? 'k' : 'gk'
+noremap <leader>j j
+noremap <leader>k k
+nnoremap { {zz
+nnoremap } }zz
 
 " Leader
 let mapleader = ' '
@@ -38,11 +44,7 @@ set ignorecase
 set smartcase
 set hlsearch
 set incsearch
-set gdefault
 set magic
-nnoremap / :set hlsearch<cr>/\v
-vnoremap / :set hlsearch<cr>/\v
-nnoremap <silent><leader><space> :set nohlsearch<cr>
 
 " Indent
 set tabstop=2
@@ -53,6 +55,8 @@ set autoindent
 set smartindent
 set expandtab
 set smarttab
+xnoremap > >gv
+xnoremap < <gv
 
 " Mark
 noremap ' `
@@ -64,29 +68,31 @@ set lazyredraw
 
 " C-mode completion
 set wildmenu
-set wildmode=list:longest
+set wildmode=list:full
 set wildignore=*/.git,*/.hg,*/.svn
 
-" Fold
-set foldenable
-set foldcolumn=2
-set foldmethod=marker
-
-" Split
+" Window
 set splitbelow
 set splitright
+nnoremap - <c-w>-
+nnoremap = <c-w>+
+nnoremap , <c-w><
+nnoremap . <c-w>>
+nnoremap <m-h> <c-w>h
+nnoremap <m-j> <c-w>j
+nnoremap <m-k> <c-w>k
+nnoremap <m-l> <c-w>l
 
 " Color scheme
 set background=dark
-colorscheme monokai-phoenix
-
-" Move cursor
-noremap <expr> j v:count ? 'j' : 'gj'
-noremap <expr> k v:count ? 'k' : 'gk'
-noremap gj j
-noremap gk k
+colorscheme gruvbox
+" Use terminal background color.
+highlight Normal ctermfg=NONE ctermbg=NONE
+highlight Pmenu ctermfg=NONE ctermbg=238 cterm=NONE
+highlight PmenuSel ctermfg=NONE ctermbg=24 cterm=NONE
 
 " Buffer (act like vimium in chrome)
+noremap <silent><leader>q :bdelete<cr>
 noremap <silent>J :bprev<cr>
 noremap <silent>K :bnext<cr>
 
@@ -97,12 +103,31 @@ command W w !sudo tee % > /dev/null
 let g:ycm_confirm_extra_conf = 0
 let g:ycm_global_ycm_extra_conf = '~/.vim/ycm.py'
 let g:ycm_semantic_triggers = {
-\ 'c,cpp,python,java,go,cs,javascript': ['re!\w{2}'],
+\ 'c,cpp,python,java,go,cs,javascript,kotlin': ['re!\w{2}'],
 \}
 let g:ycm_error_symbol = 'E'
 let g:ycm_warning_symbol = 'W'
-let s:rust_sysroot = substitute(system('rustc --print sysroot'), '\n$', '', '')
+let s:rust_sysroot = trim(system('rustc --print sysroot'))
 let g:ycm_rust_src_path = s:rust_sysroot . '/lib/rustlib/src/rust/src'
+let s:lsp = $HOME . '/.vim/language-server'
+let g:ycm_language_server = [
+\ {
+\   'name': 'kotlin',
+\   'filetypes': ['kotlin'],
+\   'cmdline': [s:lsp . '/kotlin/server/build/install/server/bin/kotlin-language-server'],
+\ }
+\]
+
+" QuickRun
+let g:quickrun_config = {
+\ '_': {
+\   'outputter': 'buffer',
+\   'runner': 'job',
+\ },
+\ 'cpp': {
+\   'exec': ['%c -std=c++2a -fcoroutines -lstdc++fs %o %s -o %s:p:r', '%s:p:r %a'],
+\ }
+\}
 
 " Asynchronous Lint Engine
 let g:ale_linters = {
@@ -141,7 +166,3 @@ let g:airline#extensions#ale#enabled = 1
 let g:airline#extensions#tabline#enabled = 1
 let g:airline#extensions#tabline#formatter = 'unique_tail'
 
-" Use terminal background color.
-hi Normal ctermfg=NONE ctermbg=NONE
-hi Pmenu ctermfg=NONE ctermbg=236 cterm=NONE
-hi PmenuSel ctermfg=NONE ctermbg=24 cterm=NONE
