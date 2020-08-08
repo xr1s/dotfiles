@@ -5,10 +5,10 @@ augroup format
   autocmd BufWritePost * silent! :redraw!
 augroup end
 
-noremap <leader>] :YcmCompleter GoTo<cr>
+noremap <leader>] :vertical YcmCompleter GoTo<cr>
 
 augroup reload
-autocmd CursorHold * checktime
+  autocmd CursorHold * checktime
 augroup end
 set autoread
 

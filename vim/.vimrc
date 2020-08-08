@@ -8,12 +8,15 @@ Plug 'vim-airline/vim-airline'
 Plug 'vim-airline/vim-airline-themes'
 Plug 'w0rp/ale'
 Plug 'ycm-core/YouCompleteMe', {
-\ 'do': './install.py --clang-completer --rust-completer --java-completer --go-completer',
+\ 'do': './install.py --clangd-completer --rust-completer --java-completer --go-completer',
 \ 'for':  ['c', 'cpp', 'python', 'rust', 'java', 'go', 'kotlin'],
 \}
 call plug#end()
 
-set nocompatible
+" Reload after vimrc changed
+augroup reload-vimrc
+  autocmd! BufWritePost .vimrc source $MYVIMRC
+augroup end
 
 filetype on
 filetype plugin on
@@ -23,8 +26,8 @@ syntax on
 " Move cursor
 noremap <expr> j v:count ? 'j' : 'gj'
 noremap <expr> k v:count ? 'k' : 'gk'
-noremap <leader>j j
-noremap <leader>k k
+noremap gj j
+noremap gk k
 nnoremap { {zz
 nnoremap } }zz
 
@@ -36,6 +39,7 @@ let maplocalleader = ' '
 let $LANG = 'en'
 set langmenu=en
 set encoding=utf-8
+scriptencoding utf-8
 
 set backspace=indent,eol,start
 
@@ -107,7 +111,7 @@ let g:ycm_semantic_triggers = {
 \}
 let g:ycm_error_symbol = 'E'
 let g:ycm_warning_symbol = 'W'
-let s:rust_sysroot = trim(system('rustc --print sysroot'))
+let s:rust_sysroot = substitute(system('rustc --print sysroot'), '\n', '', '')
 let g:ycm_rust_src_path = s:rust_sysroot . '/lib/rustlib/src/rust/src'
 let s:lsp = $HOME . '/.vim/language-server'
 let g:ycm_language_server = [
@@ -133,9 +137,11 @@ let g:quickrun_config = {
 let g:ale_linters = {
 \ 'c': [],
 \ 'cpp': [],
+\ 'java': [],
 \ 'rust': ['cargo'],
 \ 'python': ['flake8'],
 \ 'vim': ['vint'],
+\ 'go': [],
 \}
 let g:ale_sign_warning = 'W'
 let g:ale_sign_error = 'E'
@@ -165,4 +171,9 @@ let g:airline#parts#ffenc#skip_expected_string = 'utf-8[unix]'
 let g:airline#extensions#ale#enabled = 1
 let g:airline#extensions#tabline#enabled = 1
 let g:airline#extensions#tabline#formatter = 'unique_tail'
+let g:airline#extensions#ycm#enabled = 1
+let g:airline#extensions#ycm#error_symbol = 'E'
+let g:airline#extensions#ycm#warning_symbol = 'W'
 
+" Vim-Polyglot
+let g:rustfmt_autosave = 1
