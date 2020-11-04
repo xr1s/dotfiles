@@ -74,10 +74,6 @@ set wildignore=*/.git,*/.hg,*/.svn
 " Window
 set splitbelow
 set splitright
-nnoremap - <c-w>-
-nnoremap = <c-w>+
-nnoremap , <c-w><
-nnoremap . <c-w>>
 nnoremap <m-h> <c-w>h
 nnoremap <m-j> <c-w>j
 nnoremap <m-k> <c-w>k
