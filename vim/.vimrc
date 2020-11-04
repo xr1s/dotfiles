@@ -1,16 +1,12 @@
 " Vim-Plug
 call plug#begin('~/.vim/plugged')
 Plug 'flazz/vim-colorschemes'
+Plug 'jackguo380/vim-lsp-cxx-highlight'
+Plug 'neoclide/coc.nvim', {'branch': 'release'}
 Plug 'sheerun/vim-polyglot'
-Plug 'thinca/vim-quickrun'
 Plug 'tpope/vim-fugitive'
 Plug 'vim-airline/vim-airline'
 Plug 'vim-airline/vim-airline-themes'
-Plug 'w0rp/ale'
-Plug 'ycm-core/YouCompleteMe', {
-\ 'do': './install.py --clangd-completer --rust-completer --java-completer --go-completer',
-\ 'for':  ['c', 'cpp', 'python', 'rust', 'java', 'go', 'kotlin'],
-\}
 call plug#end()
 
 " Reload after vimrc changed
@@ -103,52 +99,6 @@ noremap <silent>K :bnext<cr>
 " Force save
 command W w !sudo tee % > /dev/null
 
-" YouCompleteMe
-let g:ycm_confirm_extra_conf = 0
-let g:ycm_global_ycm_extra_conf = '~/.vim/ycm.py'
-let g:ycm_semantic_triggers = {
-\ 'c,cpp,python,java,go,cs,javascript,kotlin': ['re!\w{2}'],
-\}
-let g:ycm_error_symbol = 'E'
-let g:ycm_warning_symbol = 'W'
-let s:rust_sysroot = substitute(system('rustc --print sysroot'), '\n', '', '')
-let g:ycm_rust_src_path = s:rust_sysroot . '/lib/rustlib/src/rust/src'
-let s:lsp = $HOME . '/.vim/language-server'
-let g:ycm_language_server = [
-\ {
-\   'name': 'kotlin',
-\   'filetypes': ['kotlin'],
-\   'cmdline': [s:lsp . '/kotlin/server/build/install/server/bin/kotlin-language-server'],
-\ }
-\]
-
-" QuickRun
-let g:quickrun_config = {
-\ '_': {
-\   'outputter': 'buffer',
-\   'runner': 'job',
-\ },
-\ 'cpp': {
-\   'exec': ['%c -std=c++2a -fcoroutines -lstdc++fs %o %s -o %s:p:r', '%s:p:r %a'],
-\ }
-\}
-
-" Asynchronous Lint Engine
-let g:ale_linters = {
-\ 'c': [],
-\ 'cpp': [],
-\ 'java': [],
-\ 'rust': ['cargo'],
-\ 'python': ['flake8'],
-\ 'vim': ['vint'],
-\ 'go': [],
-\}
-let g:ale_sign_warning = 'W'
-let g:ale_sign_error = 'E'
-let g:ale_lint_on_text_exchanged = 'always'
-let g:ale_lint_on_insert_leave = 1
-let g:ale_echo_msg_format = '[%linter%] %code: %%s'
-
 " Airline
 let g:airline_powerline_fonts = 1
 if !exists('g:airline_symbols')
@@ -168,7 +118,6 @@ let g:airline_right_alt_sep = ''
 let g:airline_theme = 'violet'
 
 let g:airline#parts#ffenc#skip_expected_string = 'utf-8[unix]'
-let g:airline#extensions#ale#enabled = 1
 let g:airline#extensions#tabline#enabled = 1
 let g:airline#extensions#tabline#formatter = 'unique_tail'
 let g:airline#extensions#ycm#enabled = 1
@@ -177,3 +126,15 @@ let g:airline#extensions#ycm#warning_symbol = 'W'
 
 " Vim-Polyglot
 let g:rustfmt_autosave = 1
+" Conquer of Completion
+set cmdheight=2
+set updatetime=500
+inoremap <expr><tab>   pumvisible() ? "\<c-n>" : "\<tab>"
+inoremap <expr><s-tab> pumvisible() ? "\<c-p>" : "\<s-tab>"
+inoremap <silent><expr><cr> pumvisible() ? coc#_select_confirm()
+                              \: "\<c-g>u\<cr>\<c-r>=coc#on_enter()\<cr>"
+nmap <silent> <leader>[ <plug>(coc-diagnostic-prev)
+nmap <silent> <leader>] <plug>(coc-diagnostic-next)
+noremap <silent><leader>d :call CocActionAsync('jumpDefinition')<cr>
+noremap <silent><leader>f :call CocActionAsync('format')<cr>
+noremap <silent><leader>r :call CocActionAsync('jumpReferences')<cr>

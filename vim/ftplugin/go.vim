@@ -1,11 +1,5 @@
 " On buffer close or switch, go format
-augroup format
-  autocmd!
-  autocmd BufWritePost * silent! :!goimports -w %
-  autocmd BufWritePost * silent! :redraw!
-augroup end
-
-noremap <leader>] :vertical YcmCompleter GoTo<cr>
+autocmd BufWritePre *.go :call CocAction('runCommand', 'editor.action.organizeImport')
 
 augroup reload
   autocmd CursorHold * checktime
@@ -17,3 +11,4 @@ set shiftwidth=4
 set tabstop=4
 set noexpandtab
 set softtabstop=0
+
