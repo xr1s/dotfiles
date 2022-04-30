@@ -1,0 +1,6 @@
+#!/usr/bin/sh
+
+cargo install bat  # Syntax highlighted cat|less
+cargo install exa  # Alternative to ls
+cargo install ripgrep  # Alternative to grep
+cargo install fd-find  # Alternative to find

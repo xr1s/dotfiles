@@ -1,0 +1,146 @@
+{
+  // 保存时自动格式化
+  "coc.preferences.formatOnSaveFiletypes": [
+    "c",
+    "cpp",
+    "go",
+    "java",
+    "python",
+    "ruby",
+    "rust"
+  ],
+  "coc.source.file.triggerCharacters": ["/"],
+  // 错误、警告等提示符
+  "diagnostic.errorSign": ">>",
+  "diagnostic.warningSign": ">>",
+  "diagnostic.infoSign": ">>",
+  "diagnostic.hintSign": ">>",
+  // 不提示带文件修改的补全
+  "suggest.snippetIndicator": "",
+  "suggest.completionItemKindLabels": {
+    "keyword": "",
+    "variable": "",
+    "value": "",
+    "operator": "Ψ",
+    "function": "ƒ",
+    "reference": "渚",
+    "constant": "",
+    "method": "",
+    "struct": "",
+    "class": "j",
+    "interface": "",
+    "text": "",
+    "enum": "",
+    "enumMember": "",
+    "module": "",
+    "color": "",
+    "property": "",
+    "field": "料",
+    "unit": "",
+    "event": "鬒",
+    "file": "",
+    "folder": "",
+    "snippet": "",
+    "typeParameter": "",
+    "default": ""
+  },
+
+  // Scala Metals
+  "metals.statusBarEnabled": true,
+  "metals.enable": false,
+
+  // Python Pyright
+  "python.formatting.provider": "black",
+  "python.sortImports.path": "isort",
+
+  // Rust-Analyzer
+  "rust-analyzer.checkOnSave.command": "clippy",
+
+  // Ruby solargraph
+  "solargraph.diagnostics": true,
+  "solargraph.formatting": true,
+  "solargraph.transport": "stdio",
+
+
+  // 通用 LSP 配置
+  "languageserver": {
+    "ccls": {
+      "command": "ccls",
+      "filetypes": [
+        "c",
+        "cpp",
+        "objc",
+        "objcpp"
+      ],
+      "rootPatterns": [
+        ".ccls",
+        "compile_commands.json",
+        ".vim/",
+        ".git/",
+        ".hg/"
+      ],
+      "initializationOptions": {
+        "cache": {
+          "directory": "/tmp/ccls"
+        },
+        "highlight": {
+          "lsRanges": true
+        },
+        "compilationDatabaseDirectory": "build",
+        "workspaceFolders": [],
+        "clang": {
+          "extraArgs": [
+            "-stdlib=libstdc++"
+          ]
+        },
+        "client":  {
+          "snippetSupport": true
+        }
+      }
+    },
+    "go": {
+      "command": "gopls",
+      "args": [],
+      "filetypes": [
+        "go"
+      ],
+      "rootPatterns": [
+        "go.mod",
+        ".git/",
+        ".hg/"
+      ],
+      "initializationOptions": {
+        "gofumpt": true,
+        "usePlaceholders": true,
+        "semanticTokens": true,
+        "allowModfileModifications": true,
+        "allowImplicitNetworkAccess": true,
+        "experimentalPostfixCompletions": true
+      }
+    },
+    "haskell": {
+      "command": "haskell-language-server-wrapper",
+      "args": [
+        "--lsp"
+      ],
+      "rootPatterns": [
+        "*.cabal",
+        "stack.yaml",
+        "cabal.project",
+        "package.yaml",
+        "hie.yaml"
+      ],
+      "filetypes": [
+        "haskell",
+        "lhaskell"
+      ]
+    },
+    "kotlin": {
+      "command": "kotlin-language-server",
+      "filetypes": [
+        "kotlin"
+      ],
+      "shell": true
+    }
+  }
+}

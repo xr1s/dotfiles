@@ -1,0 +1,3 @@
+#!/usr/bin/sh
+
+cabal v2-install --lib hscolour
