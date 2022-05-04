@@ -151,6 +151,16 @@ fi
 # Perl
 path+=("$HOME/.local/lib/site_perl/bin")
 manpath+=("$HOME/.local/lib/site_perl/man")
+# Zinit
+if [[ ! -f $HOME/.local/share/zinit/zinit.git/zinit.zsh ]]; then
+    print -P "%F{33} %F{220}Installing %F{33}ZDHARMA-CONTINUUM%F{220} Initiative Plugin Manager (%F{33}zdharma-continuum/zinit%F{220})…%f"
+    command mkdir -p "$HOME/.local/share/zinit" && command chmod g-rwX "$HOME/.local/share/zinit"
+    command git clone https://github.com/zdharma-continuum/zinit "$HOME/.local/share/zinit/zinit.git" && \
+        print -P "%F{33} %F{34}Installation successful.%f%b" || \
+        print -P "%F{160} The clone has failed.%f%b"
+fi
+source "$HOME/.local/share/zinit/zinit.git/zinit.zsh"
+autoload -Uz _zinit && (( ${+_comps} )) && _comps[zinit]=_zinit
 # }}}
 
 # zsh 交互模式配置 {{{
@@ -251,27 +261,18 @@ zstyle    ':completion:*' cache-path \
 # }}}
 
 # zinit 插件 {{{
-# Zinit 自安装脚本（zinit 自己生成的，就不删了）
-if [[ ! -f $HOME/.local/share/zinit/zinit.git/zinit.zsh ]]; then
-    print -P "%F{33} %F{220}Installing %F{33}ZDHARMA-CONTINUUM%F{220} Initiative Plugin Manager (%F{33}zdharma-continuum/zinit%F{220})…%f"
-    command mkdir -p "$HOME/.local/share/zinit" && command chmod g-rwX "$HOME/.local/share/zinit"
-    command git clone https://github.com/zdharma-continuum/zinit "$HOME/.local/share/zinit/zinit.git" && \
-        print -P "%F{33} %F{34}Installation successful.%f%b" || \
-        print -P "%F{160} The clone has failed.%f%b"
-fi
-source "$HOME/.local/share/zinit/zinit.git/zinit.zsh"
-autoload -Uz _zinit && (( ${+_comps} )) && _comps[zinit]=_zinit
 # 提示符插件需要阻塞载入
-zinit ice src"$HOME/.p10k.zsh"
-zinit light romkatv/powerlevel10k
+zinit lucid for \
+  src"$HOME/.p10k.zsh" \
+  romkatv/powerlevel10k
 # 只要输入 make 就会试图解析 Makefile 并高亮，遇到复杂文件会直接导致命令行挂死，所以在载入时取消 make 的高亮
 zinit wait lucid for \
-  atload'unset FAST_HIGHLIGHT\[chroma-make\]' \
-  zdharma-continuum/fast-syntax-highlighting \
   pick'bin/rbenv' as'program' atload'eval "$(bin/rbenv init - zsh)"' \
   rbenv/rbenv \
   pick'bin/ruby-build' as'program' \
-  rbenv/ruby-build
+  rbenv/ruby-build \
+  atload'unset FAST_HIGHLIGHT\[chroma-make\]' \
+  zdharma-continuum/fast-syntax-highlighting
 # 通用补全脚本
 zinit wait lucid as'completion' for \
   mv'838a7f1b39e81ee0c06cfa959e6e97f6152019b04e10aab719c6fb118b415253 -> _fossil' \
