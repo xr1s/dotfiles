@@ -27,16 +27,14 @@ function proxy() {
 # 映射 : 分隔的字符串格式路径到数组形式，方便后续操作
 typeset -TUx PATH               path=("$HOME/.local/bin" $path)
 typeset -TUx CPATH              include_path
-typeset -TUx LD_LIBRARY_PATH    library_path
-typeset -TUx LD_RUN_PATH        library_path
 typeset -TUx LIBRARY_PATH       library_path
+typeset -TUx LD_LIBRARY_PATH    ld_library_path
 typeset -TUx MANPATH            manpath=('/usr/share/man' $manpath)
 typeset -TUx INFOPATH           infopath
 typeset -TUx PKG_CONFIG_PATH    pkg_config_path
 typeset -TUx ACLOCAL_PATH       aclocal_path
 typeset -TUx TCLLIBPATH         tcllibpath
-# CMAKE_PREFIX_PATH 使用 ; 做分隔符
-typeset -TUx CMAKE_PREFIX_PATH  prefix_path \;
+typeset -TUx CMAKE_PREFIX_PATH  prefix_path \;  # CMAKE_PREFIX_PATH 使用 ; 做分隔符
 export OPENSSLDIR="$HOME/.local/ssl"
 export SSL_CERT_DIR="$HOME/.local/ssl/certs"
 export LC_ALL=en_US.UTF-8
@@ -45,19 +43,32 @@ export TERM=xterm-256color
 # packages 里保存已安装的包路径名
 # 这里用 Gentoo 的分类做整理，后续可能会修改
 packages=(
-  # dev-db
-  sqlite
-  # dev-lang
-  tcl
-  cpython
-  go
-  # dev-cpp
+  # app-arch {{{
+  bzip2
+  gzip
+  xz
+  zstd
+  # }}}
+  # app-editors {{{
+  nvim-0.7.0
+  # }}}
+  # dev-cpp {{{
   fmt
   oneTBB
   range-v3
-  # dev-java
+  # }}}
+  # dev-db {{{
+  sqlite
+  # }}}
+  # dev-java {{{
   openjdk-19-ea+20
-  # dev-libs
+  # }}}
+  # dev-lang {{{
+  cpython
+  go
+  tcl
+  # }}}
+  # dev-libs {{{
   boost
   fmt
   gmp
@@ -72,29 +83,28 @@ packages=(
   pcre2
   protoc-3.20.0
   zlog
-  # dev-utils
+  # }}}
+  # dev-util {{{
   ccls
   cmake-3.23.0
-  # app-arch
-  bzip2
-  gzip
-  xz
-  zstd
-  # app-editors
-  nvim-0.6.1
-  # sci-libs
+  # }}}
+  # sci-libs {{{
   lapack
-  # sys-devel
+  # }}}
+  # sys-devel {{{
   binutils-gdb
   gcc
   llvm-project
-  # sys-libs
+  # }}}
+  # sys-libs {{{
   gdbm
   ncurses
   readline
   zlib
-  # sys-libs
+  # }}}
+  # sys-process {{{
   htop
+  # }}}
 )
 
 function() {
@@ -104,6 +114,7 @@ function() {
     path            'bin sbin'
     include_path    'include'
     library_path    'lib lib64'
+    ld_library_path 'lib lib64'
     manpath         'share/man man'
     infopath        'share/info'
     pkg_config_path 'lib/pkgconfig'
@@ -148,9 +159,20 @@ fi
 if (( $+commands[java] )); then
   export JAVA_HOME="${$(which java)%/bin/java}"
 fi
+# Android
+if [[ -d "$HOME/.local/opt/android-sdk" ]]; then
+  export ANDROID_HOME="$HOME/.local/opt/android-sdk"
+  path+=(
+    $ANDROID_HOME/build-tools/*
+    $ANDROID_HOME/cmdline-tools/latest/bin
+    $ANDROID_HOME/platform-tools
+  )
+fi
 # Perl
 path+=("$HOME/.local/lib/site_perl/bin")
 manpath+=("$HOME/.local/lib/site_perl/man")
+# Autotools
+(( $+commands[m4] )) && export M4="$commands[m4]"
 # Zinit
 if [[ ! -f $HOME/.local/share/zinit/zinit.git/zinit.zsh ]]; then
     print -P "%F{33} %F{220}Installing %F{33}ZDHARMA-CONTINUUM%F{220} Initiative Plugin Manager (%F{33}zdharma-continuum/zinit%F{220})…%f"
@@ -161,6 +183,8 @@ if [[ ! -f $HOME/.local/share/zinit/zinit.git/zinit.zsh ]]; then
 fi
 source "$HOME/.local/share/zinit/zinit.git/zinit.zsh"
 autoload -Uz _zinit && (( ${+_comps} )) && _comps[zinit]=_zinit
+# Homebrew TODO: 迁移到 Nix
+export HOMEBREW_NO_AUTO_UPDATE=1
 # }}}
 
 # zsh 交互模式配置 {{{
@@ -202,16 +226,19 @@ export EDITOR='nvim'
 # zshmodules {{{
 zmodload zsh/complist  # 补全菜单功能和控制
 # }}}
+# zshbuiltin {{{
+autoload compinit
+autoload edit-command-line
+# }}}
 # zshzle {{{
+zle -N edit-command-line
+
 bindkey -e                                              # Emacs 键位
 bindkey "$key[Up]"   history-beginning-search-backward  # 上键向前搜索命令
 bindkey "$key[Down]" history-beginning-search-forward   # 下键向后搜索命令
 bindkey '^P' history-beginning-search-backward          # C-P 向前搜索命令
 bindkey '^N' history-beginning-search-forward           # C-N 向后搜索命令
 bindkey -M menuselect '^[[Z' reverse-menu-complete      # 补全菜单 S-Tab 选择上一条
-
-autoload -z edit-command-line
-zle -N edit-command-line
 bindkey '^X^E' edit-command-line                        # C-X C-E 进入编辑器编辑模式
 
 function expand-dots() {
@@ -238,7 +265,7 @@ bindkey '^I' expand-dots-then-expand-or-complete
 bindkey '^M' expand-dots-then-accept-line
 # }}}
 # zshcompsys {{{
-autoload -U compinit && compinit                           # 初始化补全
+compinit                                                   # 初始化补全
 zstyle    ':completion:*' list-colors                     `# 补全菜单高亮` \
   "${(s.:.)LS_COLORS}"                                    `# 文件高亮采用 LS_COLORS 配置`
 zstyle    ':completion:*' matcher-list                    `# TODO: 拼音匹配中文` \
@@ -310,26 +337,13 @@ zinit wait lucid as'completion' for \
 # }}}
 
 # 自定义脚本 {{{
-(( $+commands[exa] )) && alias ls='exa --time-style=long-iso --header --long --binary'
-alias hl='bat --style=plain --paging=never'
+(( $+commands[exa] )) && alias ls='exa --long --color-scale --binary --header --time-style=long-iso'
+(( $+commands[bat] )) && alias hl='bat --paging=never --style=plain'
 alias view="vim -R '+set nomodifiable'"
 if uname -r | grep --ignore-case --quiet microsoft
 then
   alias open='explorer.exe'
 fi
-
-# Android 开发用，似乎和 llvm-project 的链接库冲突，所以需要手动开启
-function android-dev() {
-  export ANDROID_HOME="$HOME/.local/opt/android-sdk"
-  path=(${path:#*/llvm-project/*})
-  library_path=(${library_path:#*/llvm-project/*})
-  incluce_path=(${library_path:#*/llvm-project/*})
-  path+=(
-    "$ANDROID_HOME/cmdline-tools/latest/bin"
-    "$ANDROID_HOME/build-tools/32.0.0"
-    "$ANDROID_HOME/platform-tools"
-  )
-}
 
 function highlight-log() {
   # https://ant.design/docs/spec/colors
@@ -351,4 +365,6 @@ function highlight-log() {
     /^Trace\>|"level":"trace"|level=trace/    { print "\033[38;2;64;169;255m" $0 "\033[0m"; next }
     1'
 }
+# }}}
+
 # vim: foldmethod=marker
