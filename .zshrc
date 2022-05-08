@@ -25,16 +25,16 @@ function proxy() {
 
 # 路径初始化 {{{
 # 映射 : 分隔的字符串格式路径到数组形式，方便后续操作
-typeset -TUx PATH               path=("$HOME/.local/bin" $path)
-typeset -TUx CPATH              include_path
-typeset -TUx LIBRARY_PATH       library_path
-typeset -TUx LD_LIBRARY_PATH    ld_library_path
-typeset -TUx MANPATH            manpath=('/usr/share/man' $manpath)
-typeset -TUx INFOPATH           infopath
-typeset -TUx PKG_CONFIG_PATH    pkg_config_path
-typeset -TUx ACLOCAL_PATH       aclocal_path
-typeset -TUx TCLLIBPATH         tcllibpath
-typeset -TUx CMAKE_PREFIX_PATH  prefix_path \;  # CMAKE_PREFIX_PATH 使用 ; 做分隔符
+export -TU PATH               path=("$HOME/.local/bin" $path)
+export -TU CPATH              include_path
+export -TU LIBRARY_PATH       library_path
+export -TU LD_LIBRARY_PATH    ld_library_path
+export -TU MANPATH            manpath=('/usr/share/man' $manpath)
+export -TU INFOPATH           infopath
+export -TU PKG_CONFIG_PATH    pkg_config_path
+export -TU ACLOCAL_PATH       aclocal_path
+export -TU TCLLIBPATH         tcllibpath
+export -TU CMAKE_PREFIX_PATH  prefix_path \;  # CMAKE_PREFIX_PATH 使用 ; 做分隔符
 export OPENSSLDIR="$HOME/.local/ssl"
 export SSL_CERT_DIR="$HOME/.local/ssl/certs"
 export LC_ALL=en_US.UTF-8
@@ -138,8 +138,8 @@ function() {
 
 # 各应用自定义环境变量 {{{
 # Vim
-export MYVIMRC='~/.vimrc'
-export VIMINIT='set runtimepath^=~/.vim | source $MYVIMRC'
+export MYVIMRC="$HOME/.vimrc"
+export VIMINIT="source $MYVIMRC"
 # Rust
 [[ -s "$HOME/.cargo/env" ]] && source "$HOME/.cargo/env"
 if (( $+commands[rustup] )); then
@@ -154,10 +154,6 @@ alias ghci='ghci -interactive-print=Text.Pretty.Simple.pPrint'
 if (( $+commands[go] )); then
   export GOPATH="$HOME/.go"
   path+=("$GOPATH/bin")
-fi
-# Java
-if (( $+commands[java] )); then
-  export JAVA_HOME="${$(which java)%/bin/java}"
 fi
 # Android
 if [[ -d "$HOME/.local/opt/android-sdk" ]]; then
@@ -294,6 +290,7 @@ zinit lucid for \
   romkatv/powerlevel10k
 # 只要输入 make 就会试图解析 Makefile 并高亮，遇到复杂文件会直接导致命令行挂死，所以在载入时取消 make 的高亮
 zinit wait lucid for \
+  OMZP::pip \
   pick'bin/rbenv' as'program' atload'eval "$(bin/rbenv init - zsh)"' \
   rbenv/rbenv \
   pick'bin/ruby-build' as'program' \
@@ -321,7 +318,6 @@ zinit wait lucid as'completion' for \
   https://github.com/zsh-users/zsh-completions/blob/master/src/_openssl \
   mv'zsh_completion -> _hg' \
   https://www.mercurial-scm.org/repo/hg/raw-file/tip/contrib/zsh_completion \
-  OMZP::pip OMZP::pip/_pip \
   OMZP::gem/_gem \
   OMZP::rails/_rails \
   OMZP::nvm/_nvm
@@ -346,23 +342,15 @@ then
 fi
 
 function highlight-log() {
-  # https://ant.design/docs/spec/colors
-  # Fatal  -> red-8
-  # Error  -> red-5
-  # Warn   -> gold-5
-  # Notice -> lime-5
-  # Info   -> green-5
-  # Debug  -> megenta-5
-  # Trace  -> blue-5
   awk -v IGNORECASE=1 \
     '{ gsub(/\033\[[0-9;]*?\w/, "") }
-    /^Fatal\>|"level":"fatal"|level=fatal/    { print "\033[38;2;168;7;26m"   $0 "\033[0m"; next }
-    /^Error\>|"level":"error"|level=error/    { print "\033[38;2;255;77;79m"  $0 "\033[0m"; next }
-    /^Warn\>|"level":"warning"|level=warn/    { print "\033[38;2;255;197;61m" $0 "\033[0m"; next }
-    /^Notice\>|"level":"notice"|level=notice/ { print "\033[38;2;186;230;37m" $0 "\033[0m"; next }
-    /^Info\>|"level":"info"|level=info/       { print "\033[38;2;115;209;61m" $0 "\033[0m"; next }
-    /^Debug\>|"level":"debug"|level=debug/    { print "\033[38;2;247;89;171m" $0 "\033[0m"; next }
-    /^Trace\>|"level":"trace"|level=trace/    { print "\033[38;2;64;169;255m" $0 "\033[0m"; next }
+    /^Fatal\>|"level":"fatal"|level=fatal/    { print "\033[1;31m" $0 "\033[m"; next }
+    /^Error\>|"level":"error"|level=error/    { print "\033[31m"   $0 "\033[m"; next }
+    /^Warn\>|"level":"warning"|level=warn/    { print "\033[33m"   $0 "\033[m"; next }
+    /^Notice\>|"level":"notice"|level=notice/ { print "\033[35m"   $0 "\033[m"; next }
+    /^Info\>|"level":"info"|level=info/       { print "\033[32m"   $0 "\033[m"; next }
+    /^Debug\>|"level":"debug"|level=debug/    { print "\033[34m"   $0 "\033[m"; next }
+    /^Trace\>|"level":"trace"|level=trace/    { print "\033[36m"   $0 "\033[m"; next }
     1'
 }
 # }}}
