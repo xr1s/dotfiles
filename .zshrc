@@ -35,8 +35,6 @@ export -TU PKG_CONFIG_PATH    pkg_config_path
 export -TU ACLOCAL_PATH       aclocal_path
 export -TU TCLLIBPATH         tcllibpath
 export -TU CMAKE_PREFIX_PATH  prefix_path \;  # CMAKE_PREFIX_PATH 使用 ; 做分隔符
-export OPENSSLDIR="$HOME/.local/ssl"
-export SSL_CERT_DIR="$HOME/.local/ssl/certs"
 export LC_ALL=en_US.UTF-8
 export TERM=xterm-256color
 
@@ -88,6 +86,9 @@ packages=(
   ccls
   cmake-3.23.0
   # }}}
+  # dev-vcs {{{
+  git
+  # }}}
   # sci-libs {{{
   lapack
   # }}}
@@ -110,11 +111,12 @@ packages=(
 function() {
   # 手动安装的软件，在 $OPT 下分目录隔离安装
   local OPT=$HOME/.local/opt
+  # TODO: 自动探测目标三元组
   local -A VAR_DIRS=(
     path            'bin sbin'
     include_path    'include'
-    library_path    'lib lib64'
-    ld_library_path 'lib lib64'
+    library_path    'lib lib64 lib/x86_64-unknown-linux-gnu'
+    ld_library_path 'lib lib64 lib/x86_64-unknown-linux-gnu'
     manpath         'share/man man'
     infopath        'share/info'
     pkg_config_path 'lib/pkgconfig'
@@ -127,7 +129,7 @@ function() {
     if [[ -d $OPT/$pkg ]]; then
       for var dirs in ${(kv)VAR_DIRS}; do
         for dir in $=dirs
-          [[ -d $OPT/$pkg/$dir ]] && eval $var+=\($OPT/$pkg/$dir\)
+          [[ -d $OPT/$pkg/$dir ]] && eval $var="($OPT/$pkg/$dir \$$var)"
       done
       prefix_path+=($OPT/$pkg)
     else
@@ -136,26 +138,33 @@ function() {
   done
 }  # }}}
 
-# 各应用自定义环境变量 {{{
-# Vim
+# 各应用环境变量 {{{
+# Vim {{{
 export MYVIMRC="$HOME/.vimrc"
 export VIMINIT="source $MYVIMRC"
-# Rust
+# }}}
+# OpenSSL {{{
+export OPENSSLDIR="$HOME/.local/opt/openssl"
+export SSL_CERT_DIR='/etc/ssl/certs'
+# }}}
+# Rust {{{
 [[ -s "$HOME/.cargo/env" ]] && source "$HOME/.cargo/env"
 if (( $+commands[rustup] )); then
   RUSTC_SYSROOT_FPATH="$(rustc --print sysroot)/share/zsh/site-functions"
   if [[ ! -f "$RUSTC_SYSROOT_FPATH/_rustup" ]]
     rustup completions zsh rustup > "$RUSTC_SYSROOT_FPATH/_rustup"
 fi
-# Haskell
+# }}}
+# Haskell {{{
 [[ -s "$HOME/.ghcup/env" ]] && source "$HOME/.ghcup/env"
-alias ghci='ghci -interactive-print=Text.Pretty.Simple.pPrint'
-# Go
+# }}}
+# Go {{{
 if (( $+commands[go] )); then
   export GOPATH="$HOME/.go"
   path+=("$GOPATH/bin")
 fi
-# Android
+# }}}
+# Android {{{
 if [[ -d "$HOME/.local/opt/android-sdk" ]]; then
   export ANDROID_HOME="$HOME/.local/opt/android-sdk"
   path+=(
@@ -164,12 +173,15 @@ if [[ -d "$HOME/.local/opt/android-sdk" ]]; then
     $ANDROID_HOME/platform-tools
   )
 fi
-# Perl
+# }}}
+# Perl {{{
 path+=("$HOME/.local/lib/site_perl/bin")
 manpath+=("$HOME/.local/lib/site_perl/man")
-# Autotools
+# }}}
+# Autotools {{{
 (( $+commands[m4] )) && export M4="$commands[m4]"
-# Zinit
+# }}}
+# Zinit {{{
 if [[ ! -f $HOME/.local/share/zinit/zinit.git/zinit.zsh ]]; then
     print -P "%F{33} %F{220}Installing %F{33}ZDHARMA-CONTINUUM%F{220} Initiative Plugin Manager (%F{33}zdharma-continuum/zinit%F{220})…%f"
     command mkdir -p "$HOME/.local/share/zinit" && command chmod g-rwX "$HOME/.local/share/zinit"
@@ -179,8 +191,10 @@ if [[ ! -f $HOME/.local/share/zinit/zinit.git/zinit.zsh ]]; then
 fi
 source "$HOME/.local/share/zinit/zinit.git/zinit.zsh"
 autoload -Uz _zinit && (( ${+_comps} )) && _comps[zinit]=_zinit
-# Homebrew TODO: 迁移到 Nix
+# }}}
+# Homebrew {{{
 export HOMEBREW_NO_AUTO_UPDATE=1
+# }}}
 # }}}
 
 # zsh 交互模式配置 {{{
@@ -335,7 +349,8 @@ zinit wait lucid as'completion' for \
 # 自定义脚本 {{{
 (( $+commands[exa] )) && alias ls='exa --long --color-scale --binary --header --time-style=long-iso'
 (( $+commands[bat] )) && alias hl='bat --paging=never --style=plain'
-alias view="vim -R '+set nomodifiable'"
+(( $+commands[vim] )) && alias view="vim -R '+set nomodifiable'"
+(( $+commands[rsync] )) && alias rsync='rsync --info=PROGRESS2'
 if uname -r | grep --ignore-case --quiet microsoft
 then
   alias open='explorer.exe'

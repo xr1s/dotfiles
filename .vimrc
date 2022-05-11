@@ -15,7 +15,7 @@
 " 设置 Neovim 使用 Vim 的运行时路径 {{{
 " 不过注意 Neovim 需要在 Shell 中设置 VIMINIT 环境变量来加载 .vimrc
 if has('nvim') && has('vim_starting')
-  " 这里重新设置 $MYVIMRC 是为了防止 Shell 中设置了 export MYVIMRC='~/.vimrc'
+  " 这里重新设置 $MYVIMRC 是为了防止 Shell 中设置了 MYVIMRC='~/.vimrc'，注意 '~' 未转义
   " 如果 Shell 中使用 '~/.vimrc' 的话会导致后面的 autocmd 无法匹配本文件而设置自动重新加载失败
   let $MYVIMRC = expand($MYVIMRC)
   set runtimepath^=~/.vim
@@ -47,7 +47,7 @@ Plug 'vim-airline/vim-airline'
 call plug#end()
 " }}}
 
-" 自动重载 vimrc {{{
+" 自动重载配置文件 {{{
 augroup reload-vimrc
   autocmd!
   autocmd BufWritePost $MYVIMRC source $MYVIMRC
@@ -56,19 +56,20 @@ augroup end
 " }}}
 
 " Leader {{{
-
 " 空格平时也没啥用，移动光标根本用不到
 " 作为 <Leader> 按起来也很方便
 let mapleader = ' '
 " }}}
 
 " 折叠 {{{
-" <nowait> 阻止 vim 将第二个 <Space> 识别为另一个 <Leader>
+" 用空格是因为以前没有用空格作为 <Leader> 时习惯了用空格来打开折叠
+" 能用空格打开折叠是因为空格原先功能是将光标右移一格
+" 而 "foldopen" 默认设置包含 hor（即光标左右平移）
 nnoremap <Leader><Space> za
 " }}}
 
 " 语言编码 {{{
-language en_US.UTF8
+language en_US.UTF-8
 set encoding=UTF-8
 set fileencodings=UTF-8,GB18030
 " }}}
@@ -79,8 +80,11 @@ colorscheme gruvbox
 " }}}
 
 " 缩进 {{{
-
 " 已经习惯了两格缩进
+" 习惯来自 LLVM Coding Standard, Google C++ Style Guide, etc
+" https://llvm.org/docs/CodingStandards.html#whitespace
+" https://google.github.io/styleguide/cppguide.html#Spaces_vs._Tabs
+" 不同的语言可能有不同的习惯，具体见各自的 ftplugins
 set tabstop=2
 set softtabstop=2
 set shiftwidth=2
@@ -213,52 +217,55 @@ nnoremap <Esc>j <C-W>j
 nnoremap <Esc>k <C-W>k
 nnoremap <Esc>l <C-W>l
 
-" 删除当前缓冲并打开前一个缓冲
+" 删除当前缓冲并打开右边相邻缓冲（模拟 chrome 关闭标签页行为）
 noremap <silent> <Leader>q :call DeleteCurrentBuffer()<CR>
 
-" 删除当前缓冲并打开前一个缓冲（或跳转如果已经在另一个窗口打开）
+" 删除当前缓冲并打开右边的缓冲（或跳转如果已经在另一个窗口打开）
 " 如果当前缓冲未在缓冲列表中，一般是插件打开的临时窗口，直接关闭窗口
 " TODO: 考虑缓冲在多个标签中打开的影响
 function! DeleteCurrentBuffer()
-  let bcurr = getbufinfo('%')[0]
   " 如果当前缓冲有未保存的修改则阻止删除
-  if bcurr.changed
-    let fname = fnameescape(bufname(bcurr.bufnr))
-    throw 'No write since last change for buffer "' .. fname .. '"'
+  if &modified
+    let fname = '"' .. fnameescape(bufname(bufnr('%'))) .. '"'
+    throw 'No write since last change for buffer ' .. fname
   endif
+
+  " 优先处理列表中的缓冲（列表中的都是可见的，排除了如 NERDTree 之类插件打开的）
+  let blist = getbufinfo({'buflisted': 1, 'bufloaded': 1})
+  " 列表中没有缓冲了，但这种情况下可能还会存在插件打开的缓冲，开始处理未列出
+  if len(blist) <=# 1
+    " 如果显示的窗口只剩自己，直接退出 vim，quit 自己会阻止有修改的缓冲被退出
+    let blist = filter(getbufinfo(), 'len(v:val.windows)')
+    if len(blist) ==# 1 | quit | return | endif
+  endif
+
+  let bcurr = getbufinfo('%')[0]
   " 如果没有在列表里，一般是插件打开的窗口，直接关掉
   if !bcurr.loaded || !bcurr.listed || empty(bcurr.name)
     bdelete | return
   endif
 
   " 如果缓冲在多个窗口中打开
-  " 关闭当前窗口并跳转到同缓冲的前一个窗口中
-  if len(bcurr.windows) != 1
+  " 关闭当前窗口并跳转到同缓冲的后一个窗口中
+  if len(bcurr.windows) !=# 1
+    let winds = bcurr.windows
     let winid = win_getid()
-    for index in range(len(bcurr.windows))
-      if bcurr.windows[index] == winid | break | endif
-    endfor
-    let wcurr = win_id2win(winid)
-    let wprev = win_id2win(bcurr.windows[index - 1])
-    execute wprev .. 'wincmd w'
-    execute wcurr .. 'close'
+    let index = index(winds, winid)
+    let index += index + 1 !=# len(winds) ? +1 : -1
+    execute win_id2win(winds[index]) .. 'wincmd w'
+    execute win_id2win(winid) .. 'close'
     return
   endif
 
-  " 获取列表（列表中的都是可见的）
-  let blist = getbufinfo({'buflisted': 1, 'bufloaded': 1})
-  " 如果列表中只有自己，直接退出 vim
-  if len(blist) == 1 | quit | return | endif
-
-  " 这里的循环是为了找到列表中的前一项并切换当前窗口到该缓冲
-  " index 结果为 0 也无妨，下标为 -1 会选中最后一项
-  for index in range(len(blist))
-    if blist[index].bufnr == bcurr.bufnr | break | endif
-  endfor
-  " 若前一项已经在另一个窗口打开，则直接跳转到该窗口
-  let bprev = blist[index - 1]
-  if len(bprev.windows) | close | endif
-  execute 'buffer ' .. bprev.bufnr | bdelete #
+  " 模拟 Chrome 中关闭标签的行为，关闭当前标签后先打开右边的标签，没了才往左
+  let index = index(map(copy(blist), 'v:val.bufnr'), bcurr.bufnr)
+  let index += index + 1 !=# len(blist) ? +1 : -1
+  let bnext = blist[index]
+  " 若候选缓冲已经在另一个窗口打开，则直接关闭当前窗口并跳转到该窗口
+  if len(bnext.windows) | close | endif
+  " 否则将当前窗口的缓冲切换到候选缓冲并关闭当前缓冲
+  execute 'buffer ' .. bnext.bufnr
+  execute 'bdelete ' .. bcurr.bufnr
 endfunction
 " }}}
 
@@ -270,8 +277,7 @@ set backupdir=/tmp/vim/bkup//
 set directory=/tmp/vim/swap//
 
 " 使用 root 权限强制覆写文件（需要输入密码）
-" FIXME: Neovim 不支持，会直接失败
-" https://github.com/neovim/neovim/issues/12103
+" FIXME: Neovim 不支持，会直接失败 https://github.com/neovim/neovim/issues/12103
 command W w !sudo tee % > /dev/null
 " }}}
 
@@ -297,21 +303,34 @@ set updatetime=500
 
 " 补全
 " 按下 tab 时，若补全列表已经打开 pumvisible() 则候选项跳到下一条
-" 若未打开，当光标左侧字符不是空白字符则弹出新的补全窗口，否则正常缩进
-inoremap <silent><expr> <Tab>   pumvisible() ? '<C-N>' : <SID>CheckBackSpace() ? '<Tab>' : coc#refresh()
-" shift+tab 在补全中候选项往上移动
+" 若未打开，当光标左侧字符是字母或几个特殊字符则弹出新的补全窗口，否则正常缩进
+inoremap <silent><expr> <Tab> pumvisible() ? '<C-N>' : <SID>NeedCompletion() ? coc#refresh() : '<Tab>'
+" Shift+Tab 在补全中候选项往上移动
 inoremap <silent><expr> <S-Tab> pumvisible() ? '<C-P>' : '<S-Tab>'
-function! <SID>CheckBackSpace() abort
-  let col = col('.') - 1
-  return !col || getline('.')[col - 1]  =~# '\s'
+function! <SID>NeedCompletion() abort
+  " TODO: 每个语言语言各自配置？
+  let line = getline('.')
+  let column = col('.') - 1
+  let currchar = column > 0 ? line[column - 1] : ' '
+  let prevchar = column > 1 ? line[column - 2] : ' '
+  " 光标左侧是字母或数字开启补全
+  " 数字可以作为标识符的后缀所以可能是需要开启的
+  " 但是可能会碰到光标前的词法元素是纯数字的情况，不好处理，交给 coc 了
+  if currchar =~# '\w' | return 1 | endif
+  " 几种常见的前缀
+  if currchar ==# '.' && prevchar !~# '\s' | return 1 | endif
+  if currchar ==# '>' && prevchar !~# '\s' | return 1 | endif
+  if currchar ==# ':' && prevchar !~# '\s' | return 1 | endif
+  return 0
 endfunction
 
+" 回车选中补全，同时使 coc 自动格式化代码，摘自 coc wiki
 inoremap <silent><expr> <CR> pumvisible() ? coc#_select_confirm() : '<C-G>u<CR><C-R>=coc#on_enter()<CR>'
 
 " 使用 <Leader>, <Leader>. 在错误提示间跳转
 nmap <silent> <Leader>, <Plug>(coc-diagnostic-prev)
 nmap <silent> <Leader>. <Plug>(coc-diagnostic-next)
-" K 展示代码文档
+" K 展示代码文档，代码摘自 coc wiki
 " vim 原来的 K 映射到了打开 man 手册上，现在含义不变，由 LSP 接管
 nnoremap <silent> K :call <SID>ShowDocumentation()<CR>
 function! <SID>ShowDocumentation()
@@ -355,12 +374,12 @@ endif
 " }}}
 
 " NERDTree {{{
-noremap <silent> <leader>t :NERDTree<cr>
+noremap <silent> <Leader>t :NERDTree<CR>
 " }}}
 
 " Fugitive {{{
-noremap <silent> <leader>ga :Git add % <bar> qa<cr>
-noremap <silent> <leader>gb :Git blame<cr>
+" Git add 并关闭文件，主要用于提交前，我会 git diff 一下所有文件
+noremap <silent> <Leader>ga :Git add % <bar> qall<CR>
 " }}}
 
 " vim: foldmethod=marker
