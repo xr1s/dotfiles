@@ -226,7 +226,7 @@ noremap <silent> <Leader>q :call DeleteCurrentBuffer()<CR>
 function! DeleteCurrentBuffer()
   " 如果当前缓冲有未保存的修改则阻止删除
   if &modified
-    let fname = '"' .. fnameescape(bufname(bufnr('%'))) .. '"'
+    let fname = '"' .. fnameescape(bufname('%')) .. '"'
     throw 'No write since last change for buffer ' .. fname
   endif
 
@@ -240,32 +240,26 @@ function! DeleteCurrentBuffer()
   endif
 
   let bcurr = getbufinfo('%')[0]
-  " 如果没有在列表里，一般是插件打开的窗口，直接关掉
-  if !bcurr.loaded || !bcurr.listed || empty(bcurr.name)
-    bdelete | return
-  endif
-
   " 如果缓冲在多个窗口中打开
   " 关闭当前窗口并跳转到同缓冲的后一个窗口中
   if len(bcurr.windows) !=# 1
-    let winds = bcurr.windows
     let winid = win_getid()
-    let index = index(winds, winid)
-    let index += index + 1 !=# len(winds) ? +1 : -1
-    execute win_id2win(winds[index]) .. 'wincmd w'
+    let index = index(bcurr.windows, winid)
+    let index += index + 1 !=# len(bcurr.windows) ? +1 : -1
+    execute win_id2win(bcurr.windows[index]) .. 'wincmd w'
     execute win_id2win(winid) .. 'close'
     return
   endif
 
   " 模拟 Chrome 中关闭标签的行为，关闭当前标签后先打开右边的标签，没了才往左
   let index = index(map(copy(blist), 'v:val.bufnr'), bcurr.bufnr)
-  let index += index + 1 !=# len(blist) ? +1 : -1
-  let bnext = blist[index]
+  let bnext = blist[index + (index + 1 !=# len(blist) ? +1 : -1)]
   " 若候选缓冲已经在另一个窗口打开，则直接关闭当前窗口并跳转到该窗口
-  if len(bnext.windows) | close | endif
+  if len(bnext.windows) | close
   " 否则将当前窗口的缓冲切换到候选缓冲并关闭当前缓冲
-  execute 'buffer ' .. bnext.bufnr
-  execute 'bdelete ' .. bcurr.bufnr
+  else | execute 'buffer ' .. bnext.bufnr
+  endif
+  if bufexists(bcurr.bufnr) | execute 'bdelete ' .. bcurr.bufnr | endif
 endfunction
 " }}}
 
