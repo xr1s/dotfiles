@@ -139,24 +139,31 @@ function() {
 }  # }}}
 
 # 各应用环境变量 {{{
-# Vim {{{
-export MYVIMRC="$HOME/.vimrc"
-export VIMINIT="source $MYVIMRC"
-# }}}
-# OpenSSL {{{
-export OPENSSLDIR="$HOME/.local/opt/openssl"
-export SSL_CERT_DIR='/etc/ssl/certs'
-# }}}
-# Rust {{{
-[[ -s "$HOME/.cargo/env" ]] && source "$HOME/.cargo/env"
-if (( $+commands[rustup] )); then
-  RUSTC_SYSROOT_FPATH="$(rustc --print sysroot)/share/zsh/site-functions"
-  if [[ ! -f "$RUSTC_SYSROOT_FPATH/_rustup" ]]
-    rustup completions zsh rustup > "$RUSTC_SYSROOT_FPATH/_rustup"
+function create-completion-placeholders() {
+  # 对于一些需要动态生成补全脚本的命令，这里只生成占位符，放到后面在 zinit【本地补全脚本】部分初始化
+  # 不直接在此 source 补全脚本的原因是因为此时还没 autoload compinit && compinit，我不想打乱 zshrc 顺序
+  # 而之所以留空不直接生成补全内容，是为了在二进制更新补全脚本后能及时生效，否则只是判断文件存在就不会更新了
+  # 不每次都在这儿生成一遍补全是因为生成补全默认是阻塞的，想利用 zinit 的 turbo 模式异步初始化
+  # 不过老实说我不清楚 turbo 模式在执行生成补全命令的时候能不能起作用，如果可以最好（感觉不行，那就算了）
+  local ZSH_LOCAL_FPATH="$HOME/.local/share/zsh/functions/Completion"
+  [[ ! -d $ZSH_LOCAL_FPATH ]] && rm -f $ZSH_LOCAL_FPATH && mkdir -p $ZSH_LOCAL_FPATH
+  for bin in $@; do
+    if (( $+commands[$bin] )) && [[ ! -f "$ZSH_LOCAL_FPATH/_$bin" ]]; then
+      rm -rf "$ZSH_LOCAL_FPATH/_$bin" && : > "$ZSH_LOCAL_FPATH/_$bin"
+    fi
+  done
+}
+# Android {{{
+if [[ -d "$HOME/.local/opt/android-sdk" ]]; then
+  export ANDROID_HOME="$HOME/.local/opt/android-sdk"
+  path+=(
+    $ANDROID_HOME/build-tools/*
+    $ANDROID_HOME/cmdline-tools/latest/bin
+    $ANDROID_HOME/platform-tools)
 fi
 # }}}
-# Haskell {{{
-[[ -s "$HOME/.ghcup/env" ]] && source "$HOME/.ghcup/env"
+# Autotools {{{
+(( $+commands[m4] )) && export M4="$commands[m4]"
 # }}}
 # Go {{{
 if (( $+commands[go] )); then
@@ -164,22 +171,30 @@ if (( $+commands[go] )); then
   path+=("$GOPATH/bin")
 fi
 # }}}
-# Android {{{
-if [[ -d "$HOME/.local/opt/android-sdk" ]]; then
-  export ANDROID_HOME="$HOME/.local/opt/android-sdk"
-  path+=(
-    $ANDROID_HOME/build-tools/*
-    $ANDROID_HOME/cmdline-tools/latest/bin
-    $ANDROID_HOME/platform-tools
-  )
-fi
+# Haskell {{{
+[[ -s "$HOME/.ghcup/env" ]] && source "$HOME/.ghcup/env"
+# }}}
+# Homebrew {{{
+export HOMEBREW_NO_AUTO_UPDATE=1
+# }}}
+# Kubernetes {{{
+create-completion-placeholders kubectl kubeadm minikube
+# }}}
+# OpenSSL {{{
+export OPENSSLDIR="$HOME/.local/opt/openssl"
+export SSL_CERT_DIR='/etc/ssl/certs'
 # }}}
 # Perl {{{
 path+=("$HOME/.local/lib/site_perl/bin")
 manpath+=("$HOME/.local/lib/site_perl/man")
 # }}}
-# Autotools {{{
-(( $+commands[m4] )) && export M4="$commands[m4]"
+# Rust {{{
+[[ -s "$HOME/.cargo/env" ]] && source "$HOME/.cargo/env"
+create-completion-placeholders rustup
+# }}}
+# Vim {{{
+export MYVIMRC="$HOME/.vimrc"
+export VIMINIT="source $MYVIMRC"
 # }}}
 # Zinit {{{
 if [[ ! -f $HOME/.local/share/zinit/zinit.git/zinit.zsh ]]; then
@@ -192,12 +207,14 @@ fi
 source "$HOME/.local/share/zinit/zinit.git/zinit.zsh"
 autoload -Uz _zinit && (( ${+_comps} )) && _comps[zinit]=_zinit
 # }}}
-# Homebrew {{{
-export HOMEBREW_NO_AUTO_UPDATE=1
-# }}}
+unfunction create-completion-placeholders
 # }}}
 
 # zsh 交互模式配置 {{{
+# 按照 zsh 的 man 手册分类放置内容
+# 举个例子
+# 想了解 EXTENDED_HISTORY 可以直接 man zshoptions
+# 想了解 zshaddhistory 可以直接 man zshparams
 # zshoptions {{{
 setopt EXTENDED_HISTORY        # 保存历史命令的开始和执行时间
 setopt HIST_EXPIRE_DUPS_FIRST  # 当命令历史超出上限时，首先删除历史中的重复项（而非从头开删）
@@ -213,15 +230,15 @@ setopt INTERACTIVE_COMMENTS    # 允许在交互模式使用注释（便于复�
 # zshparams {{{
 HISTFILE=~/.zsh_history                               # 历史命令储存文件
 HISTORY_IGNORE='(cd|cd *|ls|ls *)'                    # cd ls 等常见命令不追加历史
-HISTSIZE=200000                                       # 启动时加载历史数量
-SAVEHIST=100000                                       # 文件储存历史数量
+HISTSIZE=20000                                        # 启动时加载历史数量
+SAVEHIST=10000                                        # 文件储存历史数量
 WORDCHARS=''                                          # 只有字母数字作为一个单词
 (( $+commands[vivid] )) \
   && export LS_COLORS=$(vivid generate gruvbox-dark)  # 直接生成 LS_COLORS（dircolors 无法处理 di 和 *.di 同时存在的情况，可能是缺陷）
 export EDITOR='nvim'
 # }}}
 # zshmisc {{{
-function zshaddhistory() {  # 内置钩子函数
+function zshaddhistory() {
   # 简介：不追加系统中不存在的命令到命令历史中，用于过滤输入错误的命令
   # 考虑到可能存在忘记安装软件，后续仍然需要记忆该历史的情况，返回 2 先缓存历史于内存中
   # $1 就是新输入的命令，这里使用 eval 来做简单语法解析（为了处理 arg0 中含有空格这类极端情况）
@@ -341,13 +358,22 @@ zinit wait lucid as'completion' for \
   OMZP::rails/_rails \
   OMZP::nvm/_nvm
 # 本地补全脚本
-[[ -f "$RUSTC_SYSROOT_FPATH/_rustup" ]] \
-  && zinit wait lucid as'completion' for "$RUSTC_SYSROOT_FPATH/_rustup"
+function() {
+  local ZSH_LOCAL_FPATH="$HOME/.local/share/zsh/functions/Completion"
+  [[ -f "$ZSH_LOCAL_FPATH/_rustup" ]] \
+    && zinit wait lucid is-snippet atload'eval "$(rustup completions zsh rustup | sed \$d); compdef _rustup rustup"' for "$ZSH_LOCAL_FPATH/_rustup"
+  [[ -f "$ZSH_LOCAL_FPATH/_kubectl" ]] \
+    && zinit wait lucid is-snippet atload'source <(kubectl completion zsh)' for "$ZSH_LOCAL_FPATH/_kubectl"
+  [[ -f "$ZSH_LOCAL_FPATH/_kubeadm" ]] \
+    && zinit wait lucid is-snippet atload'source <(kubeadm completion zsh)' for "$ZSH_LOCAL_FPATH/_kubeadm"
+  [[ -f "$ZSH_LOCAL_FPATH/_minikube" ]] \
+    && zinit wait lucid is-snippet atload'source <(minikube completion zsh)' for "$ZSH_LOCAL_FPATH/_minikube"
+}
 # systemd 补全脚本
 # 可能是版本问题，systemctl 不支持补全脚本中的 --legend=no，因此手动替换成 --no-legend
 (( $+commands[systemctl] )) && zinit wait lucid as'completion' for \
   https://github.com/systemd/systemd/blob/main/shell-completion/zsh/_journalctl \
-  as'program' atclone'sed -i"" -e"s:{{ROOTLIBEXECDIR}}/::g" -e"s:--legend=no:--no-legend:g" _systemctl.in' atpull'%atclone' \
+  as'program' atclone'sed -e"s:{{ROOTLIBEXECDIR}}/::g" -e"s:--legend=no:--no-legend:g" _systemctl.in > _systemctl' atpull'%atclone' \
   https://github.com/systemd/systemd/blob/main/shell-completion/zsh/_systemctl.in
 # }}}
 
