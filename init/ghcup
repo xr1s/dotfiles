@@ -1,5 +1,0 @@
-#!/usr/bin/sh
-
-wget https://get-ghcup.haskell.org -O ghcup.sh
-BOOTSTRAP_HASKELL_NONINTERACTIVE=1 sh ghcup.sh
-rm ghcup.sh

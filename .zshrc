@@ -1,111 +1,44 @@
 # 代理是头等大事 {{{
 if uname -r | grep --ignore-case --quiet microsoft
 then
-  # 初始化 WSL2 代理
+  # 初始化 WSL2 代理，这里自然可以用 GNU 扩展
   export HOSTALIASES="$HOME/.local/etc/hosts"
-  WINDOWS=$(grep nameserver /etc/resolv.conf | awk '{print $2}')
-  git config --global http.proxy $WINDOWS:10809
-  git config --global https.proxy $WINDOWS:10809
-  # TODO: 使用 sed 的 c 命令
-  sed -i "s:^windows.*$:windows $WINDOWS:g" "$HOSTALIASES"
-  PROXYHOST=$WINDOWS
+  windows=$(grep --extended-regexp nameserver /etc/resolv.conf | awk '{print $2}')
+  git config --global http.proxy $windows:10809
+  git config --global https.proxy $windows:10809
+  sed --in-place "\:^windows:c windows $windows" "$HOSTALIASES"
+  proxy_server="$windows"
 else
-  PROXYHOST='localhost'
+  proxy_server='localhost'
 fi
+
 function proxy() {
   if [[ $1 == 'off' ]]
   then
-    unset http_proxy https_proxy socks5_proxy
+    unset http_proxy https_proxy socks_proxy
   else
-    export http_proxy=http://$PROXYHOST:10809
-    export https_proxy=http://$PROXYHOST:10809
-    export socks5_proxy=socks5://$PROXYHOST:10808
+    export http_proxy="http://$proxy_server:10809"
+    export https_proxy="http://$proxy_server:10809"
+    export socks_proxy="socks5://$proxy_server:10808"
   fi
 }  # }}}
 
 # 路径初始化 {{{
 # 映射 : 分隔的字符串格式路径到数组形式，方便后续操作
-export -TU PATH               path=("$HOME/.local/bin" $path)
-export -TU CPATH              include_path
-export -TU LIBRARY_PATH       library_path
-export -TU LD_LIBRARY_PATH    ld_library_path
-export -TU MANPATH            manpath=('/usr/share/man' $manpath)
-export -TU INFOPATH           infopath
-export -TU PKG_CONFIG_PATH    pkg_config_path
-export -TU ACLOCAL_PATH       aclocal_path
-export -TU TCLLIBPATH         tcllibpath
-export -TU CMAKE_PREFIX_PATH  prefix_path \;  # CMAKE_PREFIX_PATH 使用 ; 做分隔符
-export LC_ALL=en_US.UTF-8
-export TERM=xterm-256color
+export -U  PATH               path=("$HOME/.local/bin" $path)
+export -UT CPATH              include_path
+export -UT LIBRARY_PATH       library_path
+export -UT LD_LIBRARY_PATH    ld_library_path
+export -U  MANPATH            manpath=('/usr/share/man' $manpath)
+export -UT INFOPATH           infopath
+export -UT PKG_CONFIG_PATH    pkg_config_path
+export -UT ACLOCAL_PATH       aclocal_path
+export -UT TCLLIBPATH         tcllibpath
+export -UT CMAKE_PREFIX_PATH  prefix_path \;  # CMAKE_PREFIX_PATH 使用 ; 做分隔符
 
 # packages 里保存已安装的包路径名
-# 这里用 Gentoo 的分类做整理，后续可能会修改
 packages=(
-  # app-arch {{{
-  bzip2
-  gzip
-  xz
-  zstd
-  # }}}
-  # app-editors {{{
-  nvim-0.7.0
-  # }}}
-  # dev-cpp {{{
-  fmt
-  oneTBB
-  range-v3
-  # }}}
-  # dev-db {{{
-  sqlite
-  # }}}
-  # dev-java {{{
-  openjdk-19-ea+20
-  # }}}
-  # dev-lang {{{
-  cpython
-  go
-  tcl
-  # }}}
-  # dev-libs {{{
-  boost
-  fmt
-  gmp
-  isl
-  libexpat
-  libffi
-  libgit2
-  libuv
-  mpc
-  mpfr
-  openssl
-  pcre2
-  protoc-3.20.0
-  zlog
-  # }}}
-  # dev-util {{{
-  ccls
-  cmake-3.23.0
-  # }}}
-  # dev-vcs {{{
-  git
-  # }}}
-  # sci-libs {{{
-  lapack
-  # }}}
-  # sys-devel {{{
-  binutils-gdb
-  gcc
-  llvm-project
-  # }}}
-  # sys-libs {{{
-  gdbm
-  ncurses
-  readline
-  zlib
-  # }}}
-  # sys-process {{{
-  htop
-  # }}}
+  nvim
 )
 
 function() {
@@ -243,7 +176,7 @@ function zshaddhistory() {
   # 考虑到可能存在忘记安装软件，后续仍然需要记忆该历史的情况，返回 2 先缓存历史于内存中
   # $1 就是新输入的命令，这里使用 eval 来做简单语法解析（为了处理 arg0 中含有空格这类极端情况）
   # 为了防止一些关键字导致 eval 出两条语句，替换 ; 为 \; 等，noglob 防止特殊字符在 eval 中被展开
-  eval noglob set -- ${${${1//;/\\;}//&/\\&}//|/\\|}
+  eval noglob set -- $(sed -E 's:[;&|<>{}\\]:\\\0:g' <<< $1)
   # 过滤前缀的变量定义，shift 直到拿到第一个不带等号的作为 arg0
   # FIXME: 考虑 arg0 中带有等号的情况
   # 不过这情况不好处理，目前看起来是把写出 arg0 中带等号的代码的人揍一顿效率比改代码更高
@@ -381,10 +314,11 @@ function() {
 (( $+commands[exa] )) && alias ls='exa --long --color-scale --binary --header --time-style=long-iso'
 (( $+commands[bat] )) && alias hl='bat --paging=never --style=plain'
 (( $+commands[vim] )) && alias view="vim -R '+set nomodifiable'"
-(( $+commands[rsync] )) && alias rsync='rsync --info=PROGRESS2'
-if uname -r | grep --ignore-case --quiet microsoft
-then
-  alias open='explorer.exe'
+(( $+commands[rsync] )) && alias rsync='rsync --partial --info=PROGRESS2'
+if uname -r | grep --ignore-case --quiet microsoft; then
+  function open() {
+    explorer.exe $(wslpath -w "$@")
+  }
 fi
 
 function highlight-log() {

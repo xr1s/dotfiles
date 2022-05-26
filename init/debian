@@ -1,0 +1,298 @@
+#!/usr/bin/env bash
+
+# 当已经确定是 debian 时使用该脚本初始化工作区
+# 该脚本会用 root 权限对机器动手动脚，谨慎使用
+
+# Debian 的 apt upgrade 可能会有 TUI 应用和一些 diff 要手动确认，这种基本都是按一下回车就好，暂时不知道脚本里怎么解决
+
+log() {
+  echo -e "\n\033[34m$@\033[m"
+}
+
+# get_debian_version_codename 设置 codename 为发行版代号，如 stretch buster bullseye bookworm sid 等
+get_debian_version_codename() {
+  [[ -n "$codename" ]] && return
+  local etc_os_release=${LSB_OS_RELEASE:-/etc/os-release}
+  if [[ -f $etc_os_release ]]; then
+    source $etc_os_release
+    codename=$VERSION_CODENAME
+  fi
+  if [[ -z "$codename" ]]; then
+    read codename < /etc/debian_version
+    [[ "$codename" =~ '/sid' ]] && codename=sid
+  fi
+}
+
+apt_install_dependencies() {
+  log 'APT upgrade current facilities and install dependencies'
+  sudo -E apt update
+  sudo -E apt upgrade --assume-yes
+  sudo -E apt purge --assume-yes --auto-remove
+  sudo -E apt install --assume-yes \
+    curl            `# 用来从 GitHub 下载应用` \
+    gcc             `# 用来编译 Rust 写的一些工具` \
+    git             `# 用来从 GitHub 下载配置` \
+    gnupg           `# 用来给第三方 APT 仓库认证钥匙串` \
+    gzip            `# 用来解压下载的应用` \
+    htop            `# 个人常用的进程管理工具` \
+    krb5-user       `# 用来在公司内网进行身份认证` \
+    make            `# 用来编译 Rust 写的一些工具`
+    netcat-openbsd  `# 用来通过 nc -x 提供 SOCKS5 代理功能` \
+    rsync           `# 个人常用的数据同步工具` \
+    tar             `# 用来解压下载压缩包的工具，初始化脚本依赖` \
+    tmux            `# 个人常用的会话保持和分屏工具` \
+    zsh             `# 个人常用的命令行`
+}
+
+initialize_local_directories() {
+  local dir
+  for dir in bin lib opt; do
+    mkdir --parent "$HOME/.local/$dir"
+  done
+  export PATH="$HOME/.local/bin${PATH:+:$PATH}"
+  export LD_LIBRARY_PATH="$HOME/.local/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+}
+
+initialize_windows_v2ray_proxy() {
+  mkdir --parent "$HOME/.local/etc"
+  # WSL 的代理初始化
+  if uname --kernel-release | grep --quiet --ignore-case microsoft; then
+    windows=$(grep --extended-regexp 'nameserver\s+172' /etc/resolv.conf | awk '{print $2}')
+    echo "windows $windows" > "$HOME/.local/etc/hosts"
+  fi
+  # 这几个端口只是我的惯用端口
+  export socks_proxy=http://$windows:10808
+  export http_proxy=http://$windows:10809
+  export https_proxy=http://$windows:10809
+}
+
+install_v2ray_using_fhs_install() {
+  # 需要自己手动设置 /usr/local/etc/v2ray/config.json
+  # 这玩意儿毕竟相当于密码，咱不能扔仓库里
+  log 'Installing v2ray using fhs-install-v2ray'
+  local fhs_install_v2ray_url=https://raw.githubusercontent.com/v2fly/fhs-install-v2ray/master/install-release.sh
+  : \
+    | curl --fail --location --silent --show-error --url "$fhs_install_v2ray_url" \
+    | sudo PROXY="$https_proxy" bash -s
+  log 'v2ray --version'
+  /usr/local/bin/v2ray --version
+}
+
+install_jq_from_github_release() {
+  # jq 最初是用来从 GitHub API 获取一些软件的最新版本号的，目前在初始化脚本里用不上
+  log 'Installing jq from GitHub release...'
+  local jq_release=https://github.com/stedolan/jq/releases/latest/download/jq-linux64 
+  curl --fail --location --output "$HOME/.local/bin/jq" --show-error --silent --url "$jq_release"
+  chmod +x "$HOME/.local/bin/jq"
+  log 'jq --version:'
+  jq --version
+}
+
+install_nodejs_from_nodesource_apt_repository() {
+  log 'Installing nodejs from NodeSource APT repository...'
+  local keyring_url=https://deb.nodesource.com/gpgkey/nodesource.gpg.key 
+  local keyring=/usr/share/keyrings/nodesource.gpg
+
+  # 设置 sources list 并安装 nodejs
+  get_debian_version_codename
+  # 指数递增
+  local version=4 # deb.nodesource.com 上分发的 nodejs 从 v4 开始
+  while curl --fail --silent --url "https://deb.nodesource.com/node_$version.x" > /dev/null; do
+    version=$(($version * 2))  # 指数递增
+  done
+  # 二分下降
+  local lower_bound=$(($version / 2)) upper_bound=$version
+  local version=$((($lower_bound + $upper_bound) / 2))
+  while [ $(( $lower_bound + 1 )) -ne $upper_bound ]; do
+    curl --fail --silent --url "https://deb.nodesource.com/node_$version.x" > /dev/null \
+      && lower_bound=$version \
+      || upper_bound=$version
+    version=$((($lower_bound + $upper_bound) / 2))
+  done
+  if [[ "$codename" == stretch ]]; then
+    # 不知道是不是公司的问题，stretch 上 nodejs 18 开始依赖的 libc 版本和系统的对不上，这里先锁死 17
+    # 我知道可以跳过上面的二分步骤，不过为了代码结构我就先留着了，不想多写个函数
+    version=17
+  fi
+
+  log "Current latest major version of Node.js: $version"
+
+  : \
+    | curl --fail --location --silent --show-error --url "$keyring_url" \
+    | gpg --dearmor \
+    | sudo tee "$keyring" \
+    >/dev/null
+
+  echo "deb [signed-by=$keyring] https://deb.nodesource.com/node_$version.x $codename main" \
+    | sudo tee /etc/apt/sources.list.d/nodesource.list \
+    > /dev/null
+  echo "deb-src [signed-by=$keyring] https://deb.nodesource.com/node_$version.x $codename main" \
+    | sudo tee --append /etc/apt/sources.list.d/nodesource.list \
+    > /dev/null
+  sudo -E apt update
+  sudo -E apt install --assume-yes nodejs
+  log 'node --version:'
+  node --version
+}
+
+install_ffmpeg_imagemagick_from_deb_multimedia_apt_repository() {
+  log 'Instaling FFmpeg and ImageMagick from deb-multimedia APT repository...'
+  get_debian_version_codename
+  echo "deb https://www.deb-multimedia.org $codename main" \
+    | sudo tee /etc/apt/sources.list.d/deb-multimedia.list \
+    > /dev/null
+  echo "deb-src https://www.deb-multimedia.org $codename main" \
+    | sudo tee --append /etc/apt/sources.list.d/deb-multimedia.list \
+    > /dev/null
+  sudo -E apt update -oAcquire::AllowInsecureRepositories=true
+  sudo -E apt install \
+    --allow-unauthenticated \
+    --assume-yes \
+    -oAcquire::AllowInsecureRepositories=true \
+    deb-multimedia-keyring
+  sudo -E apt update --allow-unauthenticated
+  sudo -E apt install \
+    --assume-yes \
+    ffmpeg \
+    libavcodec-dev \
+    libavdevice-dev \
+    libavfilter-dev \
+    libavformat-dev \
+    libavutil-dev \
+    libpostproc-dev \
+    libswresample-dev \
+    libswscale-dev
+  log 'ffmpeg -version:'
+  ffmpeg -version
+  sudo -E apt install --assume-yes imagemagick
+  log 'convert --version:'
+  convert --version
+}
+
+install_neovim_from_github_release() {
+  log 'Instaling Neovim from GitHub release...'
+  local neovim_release=https://github.com/neovim/neovim/releases/latest/download/nvim-linux64.tar.gz
+  : \
+  | curl --fail --location --show-error --silent --url "$neovim_release" \
+  | tar --directory="$HOME/.local/opt" --extract --gunzip --overwrite --transform='s:^nvim[^/]*:nvim:x' --verbose
+
+  ln --force --symbolic ../opt/nvim/bin/nvim .local/bin/vim
+  export PATH="$HOME/.local/opt/nvim/bin${PATH:+:$PATH}"
+  log 'nvim --version'
+  nvim --version
+}
+
+install_rust_toolchains() {
+  log 'Instaling Rust toolchains using rustup...'
+  : \
+    | curl --fail --silent --show-error https://sh.rustup.rs \
+    | sh -s -- --default-toolchain nightly --no-modify-path -y
+  source "$HOME/.cargo/env"
+  log "rustc --version:"
+  rustc --version
+
+  cargo install --all-features \
+    bat         `# 用作高亮代码` \
+    cargo-edit  `# cargo 命令增强` \
+    du-dust     `# du   的高效替代` \
+    exa         `# ls   的高亮替代` \
+    fd-find     `# find 的高效替代` \
+    ripgrep     `# grep 的高效替代` \
+    vivid       `# 输出 LS_COLORS 提供高亮` \
+  || true
+  # 其它可以按需自己安装
+}
+
+install_go_toolchains() {
+  log 'Instaling Go toolchains from https://go.dev/dl'
+  local go_version=$(curl --fail --silent --show-error --location --url 'https://go.dev/VERSION?m=text')
+  log "Latest Go version: $go_version"
+  local go_release=https://go.dev/dl/$go_version.linux-amd64.tar.gz
+  mkdir --parent "$HOME/.go"
+  : \
+    | curl --fail --location --silent --show-error --url $go_release \
+    | tar --directory="$HOME" --extract --gunzip --overwrite --transform='s:^go:.go:x' --verbose
+  export PATH="$HOME/.go/bin${PATH:+:$PATH}"
+
+  log 'go version:'
+  go version
+
+  go env -w GOPROXY='goproxy.cn,direct'
+  go env -w GOPATH="$HOME/.go"
+  go env -w GOSUMDB=sum.golang.google.cn
+
+  go install golang.org/x/tools/gopls@master || true  # Go Language Server
+  go install github.com/go-delve/delve/cmd/dlv@master || true  # Go Debugger
+}
+
+clone_dotfiles() {
+  if [[ ! -d "$HOME/dotfiles/.git" ]]; then
+    git clone https://github.com/xr1s/dotfiles.git "$HOME/dotfiles"
+  else
+    ( cd "$HOME/dotfiles" && git fetch --prune && git reset --hard origin/master )
+  fi
+
+  (
+    cd "$HOME/dotfiles"
+    find '.p10k.zsh' '.tmux.conf' '.vim' '.vimrc' '.zshrc' \
+    -not -type d \
+    -exec install -D --backup=numbered --mode 0644 '{}' '../{}' \;
+  )
+}
+
+initialize_vim_plugins() {
+  log 'Installing Vim plugins...'
+
+  local plug_vim_url=https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
+  local plug_vim=$HOME/.vim/autoload/plug.vim
+  curl --create-dirs --fail --location --output "$plug_vim" --url "$plug_vim_url"
+  export MYVIMRC="$HOME/.vimrc"
+  export VIMINIT="if filereadable('$MYVIMRC') | source $MYVIMRC | endif"
+  # TODO: 让安装步骤并行起来，和退出分开
+  "$HOME/.local/opt/nvim/bin/nvim" '+PlugInstall --sync' +qall
+  "$HOME/.local/opt/nvim/bin/nvim" '+CocInstall coc-go coc-pyright coc-rust-analyzer -sync' +qall
+}
+
+initialize_zsh_plugins() {
+  log 'Installing Zsh plugins...'
+  if [[ ! -f $HOME/.local/share/zinit/zinit.git/zinit.zsh ]]; then
+    mkdir --parent "$HOME/.local/share/zinit" && chmod g-rwX "$HOME/.local/share/zinit"
+    git clone https://github.com/zdharma-continuum/zinit "$HOME/.local/share/zinit/zinit.git"
+  fi
+  sudo chsh --shell /bin/zsh $USER
+}
+
+main() {
+  set -o errexit
+
+  cd "$HOME"
+
+  initialize_local_directories
+
+  # Windows WSL 下 V2Ray 服务由宿主机提供，不单独安装
+  if uname --kernel-release | grep --quiet --ignore-case microsoft; then
+    initialize_windows_v2ray_proxy
+  else
+    install_v2ray_using_fhs_install
+  fi
+
+  # 安装依赖包
+  apt_install_dependencies
+
+  install_jq_from_github_release
+  install_neovim_from_github_release
+  install_nodejs_from_nodesource_apt_repository
+  install_ffmpeg_imagemagick_from_deb_multimedia_apt_repository
+  install_rust_toolchains
+  install_go_toolchains
+
+  # 交互模式需要的依赖
+  clone_dotfiles
+  initialize_vim_plugins
+  initialize_zsh_plugins
+
+  # 启动 zsh 并进行最后的插件安装
+  exec /bin/zsh
+}
+
+main

@@ -65,6 +65,7 @@ let mapleader = ' '
 " 用空格是因为以前没有用空格作为 <Leader> 时习惯了用空格来打开折叠
 " 能用空格打开折叠是因为空格原先功能是将光标右移一格
 " 而 "foldopen" 默认设置包含 hor（即光标左右平移）
+set modeline
 nnoremap <Leader><Space> za
 " }}}
 
@@ -183,10 +184,10 @@ noremap ? ?\v
 " FIXME: 进入命令模式后会在输入 s 后有一段等待时间，体验不好
 " 以及可能会出现例如 :%s/\vthis 这种搜索，此时按下 / 会自动加入 \v
 " 考虑 autocmd "CmdlineChanged" + "getchar()" + "feedkeys()"？似乎会递归，看看能否解决
-cnoremap s/ s/\v
-cnoremap g/ g/\v
-cnoremap s? s?\v
-cnoremap g? g?\v
+cnoremap %s/ %s/\v
+cnoremap %g/ %g/\v
+cnoremap %s? %s?\v
+cnoremap %g? %g?\v
 
 " 使 n 总是正向搜索，N 总是反向搜索
 nnoremap <expr> n 'Nn'[v:searchforward] .. (&foldopen =~? 'search\\|all' ? 'zv' : '')
@@ -267,8 +268,8 @@ endfunction
 noremap <silent> <Leader>w :update<CR>
 
 " 没啥用的废物
-set backupdir=/tmp/vim/bkup//
-set directory=/tmp/vim/swap//
+set nobackup
+set noswapfile
 
 " 使用 root 权限强制覆写文件（需要输入密码）
 " FIXME: Neovim 不支持，会直接失败 https://github.com/neovim/neovim/issues/12103
