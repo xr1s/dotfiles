@@ -36,7 +36,7 @@ apt_install_dependencies() {
     gzip            `# 用来解压下载的应用` \
     htop            `# 个人常用的进程管理工具` \
     krb5-user       `# 用来在公司内网进行身份认证` \
-    make            `# 用来编译 Rust 写的一些工具`
+    make            `# 用来编译 Rust 写的一些工具` \
     netcat-openbsd  `# 用来通过 nc -x 提供 SOCKS5 代理功能` \
     rsync           `# 个人常用的数据同步工具` \
     tar             `# 用来解压下载压缩包的工具，初始化脚本依赖` \
@@ -173,8 +173,8 @@ install_neovim_from_github_release() {
   log 'Instaling Neovim from GitHub release...'
   local neovim_release=https://github.com/neovim/neovim/releases/latest/download/nvim-linux64.tar.gz
   : \
-  | curl --fail --location --show-error --silent --url "$neovim_release" \
-  | tar --directory="$HOME/.local/opt" --extract --gunzip --overwrite --transform='s:^nvim[^/]*:nvim:x' --verbose
+    | curl --fail --location --show-error --silent --url "$neovim_release" \
+    | tar --directory="$HOME/.local/opt" --extract --gunzip --overwrite --transform='s:^nvim[^/]*:nvim:x' --verbose
 
   ln --force --symbolic ../opt/nvim/bin/nvim .local/bin/vim
   export PATH="$HOME/.local/opt/nvim/bin${PATH:+:$PATH}"
@@ -234,9 +234,10 @@ clone_dotfiles() {
 
   (
     cd "$HOME/dotfiles"
-    find '.p10k.zsh' '.tmux.conf' '.vim' '.vimrc' '.zshrc' \
-    -not -type d \
-    -exec install -D --backup=numbered --mode 0644 '{}' '../{}' \;
+    find \
+      '.p10k.zsh' '.tmux.conf' '.vim' '.vimrc' '.zshrc' \
+      -not -type d \
+      -exec install -D --backup=numbered --mode 0644 '{}' '../{}' \;
   )
 }
 

@@ -36,7 +36,6 @@ let g:polyglot_disabled = ['c/c++', 'cpp-modern']
 
 call plug#begin('~/.vim/plugged')
 Plug 'gruvbox-community/gruvbox'
-Plug 'jackguo380/vim-lsp-cxx-highlight', { 'for': ['c', 'cpp'] }
 Plug 'neoclide/coc.nvim', { 'branch': 'release' }
 Plug 'preservim/nerdtree', { 'on': 'NERDTree' }
 Plug 'ryanoasis/vim-devicons'
@@ -131,11 +130,11 @@ cnoremap <expr> <C-C> pumvisible() ? '<C-E>' : '<C-C>'
 " 这时候使用 j k 移动光标会直接跳转到文件的下一行而不是屏幕的下一行
 " 为了更符合习惯，将 j k 默认映射成 gj gk，用于跳转到屏幕的下一行
 " 但是如果使用诸如 10j 10k 这种指定行数的多行跳转，则仍然使用默认跳转
-noremap <expr> j v:count ? 'j' : 'gj'
-noremap <expr> k v:count ? 'k' : 'gk'
+noremap <silent><expr> j v:count ? 'j' : 'gj'
+noremap <silent><expr> k v:count ? 'k' : 'gk'
 " 将 gj gk 映射回 j k 以防需要
-noremap gj j
-noremap gk k
+noremap <silent> gj j
+noremap <silent> gk k
 
 " 使用 { } 跳转后将光标移动到屏幕中央
 nnoremap { {zz
@@ -145,11 +144,8 @@ nnoremap } }zz
 " 详细介绍：https://vi.stackexchange.com/questions/2162
 set backspace=indent,eol,start
 
-" 启用完整鼠标功能（移动、选中、匹配等）
-set mouse=a
-" 编辑模式下禁用鼠标单击移动，防止手摸到触控版后光标乱窜
-inoremap <LeftMouse>  <Nop>
-inoremap <RightMouse> <Nop>
+" 非编辑模式下启用鼠标功能（移动、选中、匹配等）
+set mouse=nvc
 " }}}
 
 " 搜索 {{{
@@ -188,6 +184,11 @@ cnoremap %s/ %s/\v
 cnoremap %g/ %g/\v
 cnoremap %s? %s?\v
 cnoremap %g? %g?\v
+" 选择模式下的筛选
+xnoremap :s/ :s/\v
+xnoremap :g/ :g/\v
+xnoremap :s? :s?\v
+xnoremap :g? :g?\v
 
 " 使 n 总是正向搜索，N 总是反向搜索
 nnoremap <expr> n 'Nn'[v:searchforward] .. (&foldopen =~? 'search\\|all' ? 'zv' : '')
@@ -213,13 +214,23 @@ noremap <silent> <C-K> :bnext<CR>
 set splitbelow
 set splitright
 " 使用 Alt+HJKL 切换窗口
-nnoremap <Esc>h <C-W>h
-nnoremap <Esc>j <C-W>j
-nnoremap <Esc>k <C-W>k
-nnoremap <Esc>l <C-W>l
+nnoremap <silent> <Esc>h <C-W>h
+nnoremap <silent> <Esc>j <C-W>j
+nnoremap <silent> <Esc>k <C-W>k
+nnoremap <silent> <Esc>l <C-W>l
 
 " 删除当前缓冲并打开右边相邻缓冲（模拟 chrome 关闭标签页行为）
 noremap <silent> <Leader>q :call DeleteCurrentBuffer()<CR>
+
+function! IsFloating(winid)
+  if has('nvim')
+    let config = nvim_win_get_config(a:winid)
+    return len(config.relative) || config.external
+  else
+    " TODO: Vim 检测是否为 coc.nvim 弹出来的加载进度条
+    " 好像不检测也没事，因为 vim 没有悬浮类型，能直接退出
+  endif
+endfunction
 
 " 删除当前缓冲并打开右边的缓冲（或跳转如果已经在另一个窗口打开）
 " 如果当前缓冲未在缓冲列表中，一般是插件打开的临时窗口，直接关闭窗口
@@ -235,8 +246,8 @@ function! DeleteCurrentBuffer()
   let blist = getbufinfo({'buflisted': 1, 'bufloaded': 1})
   " 列表中没有缓冲了，但这种情况下可能还会存在插件打开的缓冲，开始处理未列出
   if len(blist) <=# 1
+    let blist = filter(getbufinfo(), 'len(v:val.windows) && !IsFloating(v:val.windows[0])')
     " 如果显示的窗口只剩自己，直接退出 vim，quit 自己会阻止有修改的缓冲被退出
-    let blist = filter(getbufinfo(), 'len(v:val.windows)')
     if len(blist) ==# 1 | quit | return | endif
   endif
 
@@ -247,9 +258,15 @@ function! DeleteCurrentBuffer()
     let winid = win_getid()
     let index = index(bcurr.windows, winid)
     let index += index + 1 !=# len(bcurr.windows) ? +1 : -1
-    execute win_id2win(bcurr.windows[index]) .. 'wincmd w'
-    execute win_id2win(winid) .. 'close'
+    execute win_id2win(bcurr.windows[index]) 'wincmd w'
+    execute win_id2win(winid) 'close'
     return
+  endif
+  " 如果没有在列表里、没有名字或是 terminal，一般是插件打开的窗口，直接关掉
+  if !bcurr.loaded || !bcurr.listed || empty(bcurr.name) || &buftype ==# 'terminal'
+    " terminal 类型需要 ! 来杀死进程，否则会滞留在后台，后续退出 vim 时又会弹出来
+    " 对于其它类型的缓冲，bdelete! 会导致未保存内容丢失，但这里因为是插件打开的所以没问题
+    bdelete! | return
   endif
 
   " 模拟 Chrome 中关闭标签的行为，关闭当前标签后先打开右边的标签，没了才往左
@@ -258,9 +275,9 @@ function! DeleteCurrentBuffer()
   " 若候选缓冲已经在另一个窗口打开，则直接关闭当前窗口并跳转到该窗口
   if len(bnext.windows) | close
   " 否则将当前窗口的缓冲切换到候选缓冲并关闭当前缓冲
-  else | execute 'buffer ' .. bnext.bufnr
+  else | execute 'buffer' bnext.bufnr
   endif
-  if bufexists(bcurr.bufnr) | execute 'bdelete ' .. bcurr.bufnr | endif
+  if bufexists(bcurr.bufnr) | execute 'bdelete!' bcurr.bufnr | endif
 endfunction
 " }}}
 
@@ -291,10 +308,18 @@ let g:airline#extensions#coc#enabled = 1
 " }}}
 
 " Conquer of Completion {{{
-let g:coc_config_home = '~/.vim'
+let g:coc_config_home = expand('~/.vim')
 
 set cmdheight=2
 set updatetime=500
+
+" 感觉默认的高亮有点混乱，改一下
+" （和我主题有关）变量和参数默认的颜色是加粗青色 cterm=bold ctermfg=14
+" 搞得和 coc.nvim 的未引用对象 CocUnusedHighlight 是同一个颜色，这能忍？
+highlight Identifier ctermfg=White
+" 结构体保持和其他内置类型、枚举类型相同高亮
+highlight link CocSemStruct Type
+highlight link CocSemTypeParameter Type
 
 " 补全
 " 按下 tab 时，若补全列表已经打开 pumvisible() 则候选项跳到下一条
@@ -341,22 +366,17 @@ autocmd CursorHold * silent! call CocActionAsync('highlight')
 
 " 格式化，不过我开了保存时自动格式化，这个基本用不着
 nnoremap <silent> <Leader>= <Plug>(coc-format)
-" 跳转定义
+" 跳转定义：d 是 def 的缩写
 nnoremap <silent> <Leader>d <Plug>(coc-definition)
-" 跳转类型
-nnoremap <silent> <Leader>y <Plug>(coc-type-definition)
-" 跳转实现
+" 跳转实现：i 是 impl 的缩写
 nnoremap <silent> <Leader>i <Plug>(coc-implementation)
-" 跳转引用
-nnoremap <silent> <Leader>r <Plug>(coc-references)
-" 快速修复
-nnoremap <silent> <Leader>f <Plug>(coc-fix-current)
+" 跳转引用：f 是 find 的缩写
+nnoremap <silent> <Leader>f <Plug>(coc-references)
 " code actions
 nnoremap <silent> <Leader>a <Plug>(coc-codeaction-line)
 " code lens
-nnoremap <silent> <Leader>l <Plug>(coc-codelens-action)
-" 重构
-" nnoremap <silent> <Leader>rn <plug>(coc-rename)
+nnoremap <silent> <Leader>len <Plug>(coc-codelens-action)
+" 重构：rn 是 rename 的缩写
 nnoremap <silent> <Leader>rn <Plug>(coc-refactor)
 " }}}
 
@@ -369,12 +389,18 @@ endif
 " }}}
 
 " NERDTree {{{
-noremap <silent> <Leader>t :NERDTree<CR>
+noremap <silent> <Leader>ls :NERDTree<CR>
 " }}}
 
 " Fugitive {{{
 " Git add 并关闭文件，主要用于提交前，我会 git diff 一下所有文件
-noremap <silent> <Leader>ga :Git add % <bar> qall<CR>
+noremap <silent> <Leader>ga :Git add % <Bar> qall<CR>
+" Git checkout 并关闭文件，主要用于提交前，我会 git diff 一下所有文件
+noremap <silent> <Leader>gc :Git checkout % <Bar> qall<CR>
 " }}}
+
+" 临时为了 termdebug 加上的
+" termdebug 还没配，暂时不放上来
+tnoremap <Esc> <C-\><C-N>
 
 " vim: foldmethod=marker

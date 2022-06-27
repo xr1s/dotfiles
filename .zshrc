@@ -3,7 +3,7 @@ if uname -r | grep --ignore-case --quiet microsoft
 then
   # 初始化 WSL2 代理，这里自然可以用 GNU 扩展
   export HOSTALIASES="$HOME/.local/etc/hosts"
-  windows=$(grep --extended-regexp nameserver /etc/resolv.conf | awk '{print $2}')
+  windows=$(grep --fixed-strings nameserver /etc/resolv.conf | awk '{print $2}')
   git config --global http.proxy $windows:10809
   git config --global https.proxy $windows:10809
   sed --in-place "\:^windows:c windows $windows" "$HOSTALIASES"
@@ -15,11 +15,12 @@ fi
 function proxy() {
   if [[ $1 == 'off' ]]
   then
-    unset http_proxy https_proxy socks_proxy
+    unset http_proxy https_proxy socks_proxy no_proxy
   else
     export http_proxy="http://$proxy_server:10809"
     export https_proxy="http://$proxy_server:10809"
-    export socks_proxy="socks5://$proxy_server:10808"
+    export socks_proxy="socks://$proxy_server:10808"
+    export no_proxy='10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,fc00::/7'
   fi
 }  # }}}
 
@@ -43,7 +44,7 @@ packages=(
 
 function() {
   # 手动安装的软件，在 $OPT 下分目录隔离安装
-  local OPT=$HOME/.local/opt
+  local OPT="$HOME/.local/opt"
   # TODO: 自动探测目标三元组
   local -A VAR_DIRS=(
     path            'bin sbin'
@@ -89,10 +90,10 @@ function create-completion-placeholders() {
 # Android {{{
 if [[ -d "$HOME/.local/opt/android-sdk" ]]; then
   export ANDROID_HOME="$HOME/.local/opt/android-sdk"
-  path+=(
-    $ANDROID_HOME/build-tools/*
-    $ANDROID_HOME/cmdline-tools/latest/bin
-    $ANDROID_HOME/platform-tools)
+  [[ -d "$ANDROID_HOME/cmdline-tools/latest/bin" ]] && path+=($ANDROID_HOME/cmdline-tools/latest/bin)
+  [[ -d "$ANDROID_HOME/build-tools" ]] && path+=($ANDROID_HOME/build-tools/*)
+  [[ -d "$ANDROID_HOME/emulator" ]] && path+=($ANDROID_HOME/emulator)
+  [[ -d "$ANDROID_HOME/platform-tools" ]] && path+=($ANDROID_HOME/platform-tools)
 fi
 # }}}
 # Autotools {{{
@@ -111,7 +112,7 @@ fi
 export HOMEBREW_NO_AUTO_UPDATE=1
 # }}}
 # Kubernetes {{{
-create-completion-placeholders kubectl kubeadm minikube
+create-completion-placeholders kubectl kubeadm minikube helm
 # }}}
 # OpenSSL {{{
 export OPENSSLDIR="$HOME/.local/opt/openssl"
@@ -171,7 +172,7 @@ WORDCHARS=''                                          # 只有字母数字作为
 export EDITOR='nvim'
 # }}}
 # zshmisc {{{
-function zshaddhistory() {
+function _zshaddhistory() {
   # 简介：不追加系统中不存在的命令到命令历史中，用于过滤输入错误的命令
   # 考虑到可能存在忘记安装软件，后续仍然需要记忆该历史的情况，返回 2 先缓存历史于内存中
   # $1 就是新输入的命令，这里使用 eval 来做简单语法解析（为了处理 arg0 中含有空格这类极端情况）
@@ -199,10 +200,10 @@ autoload edit-command-line
 zle -N edit-command-line
 
 bindkey -e                                              # Emacs 键位
-bindkey "$key[Up]"   history-beginning-search-backward  # 上键向前搜索命令
-bindkey "$key[Down]" history-beginning-search-forward   # 下键向后搜索命令
-bindkey '^P' history-beginning-search-backward          # C-P 向前搜索命令
-bindkey '^N' history-beginning-search-forward           # C-N 向后搜索命令
+bindkey -- "$key[Up]"   history-beginning-search-backward  # 上键向前搜索命令
+bindkey -- "$key[Down]" history-beginning-search-forward   # 下键向后搜索命令
+bindkey -- '^P' history-beginning-search-backward          # C-P 向前搜索命令
+bindkey -- '^N' history-beginning-search-forward           # C-N 向后搜索命令
 bindkey -M menuselect '^[[Z' reverse-menu-complete      # 补全菜单 S-Tab 选择上一条
 bindkey '^X^E' edit-command-line                        # C-X C-E 进入编辑器编辑模式
 
@@ -264,7 +265,8 @@ zinit wait lucid for \
   rbenv/rbenv \
   pick'bin/ruby-build' as'program' \
   rbenv/ruby-build \
-  atload'unset FAST_HIGHLIGHT\[chroma-make\]' \
+  atload'unset FAST_HIGHLIGHT\[chroma-make\]
+    FAST_HIGHLIGHT_STYLES[defaulthere-string-text]=fg=blue' \
   zdharma-continuum/fast-syntax-highlighting
 # 通用补全脚本
 zinit wait lucid as'completion' for \
@@ -287,6 +289,7 @@ zinit wait lucid as'completion' for \
   https://github.com/zsh-users/zsh-completions/blob/master/src/_openssl \
   mv'zsh_completion -> _hg' \
   https://www.mercurial-scm.org/repo/hg/raw-file/tip/contrib/zsh_completion \
+  OMZP::adb/_adb \
   OMZP::gem/_gem \
   OMZP::rails/_rails \
   OMZP::nvm/_nvm
@@ -301,6 +304,8 @@ function() {
     && zinit wait lucid is-snippet atload'source <(kubeadm completion zsh)' for "$ZSH_LOCAL_FPATH/_kubeadm"
   [[ -f "$ZSH_LOCAL_FPATH/_minikube" ]] \
     && zinit wait lucid is-snippet atload'source <(minikube completion zsh)' for "$ZSH_LOCAL_FPATH/_minikube"
+  [[ -f "$ZSH_LOCAL_FPATH/_helm" ]] \
+    && zinit wait lucid is-snippet atload'source <(helm completion zsh)' for "$ZSH_LOCAL_FPATH/_helm" 
 }
 # systemd 补全脚本
 # 可能是版本问题，systemctl 不支持补全脚本中的 --legend=no，因此手动替换成 --no-legend

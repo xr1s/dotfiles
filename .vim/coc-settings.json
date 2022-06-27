@@ -1,22 +1,7 @@
+// help coc-config.txt
 {
-  // 保存时自动格式化
-  "coc.preferences.formatOnSaveFiletypes": [
-    "c",
-    "cpp",
-    "go",
-    "java",
-    "python",
-    "ruby",
-    "rust"
-  ],
-  "coc.source.file.triggerCharacters": ["/"],
-  // 错误、警告等提示符
-  "diagnostic.errorSign": ">>",
-  "diagnostic.warningSign": ">>",
-  "diagnostic.infoSign": ">>",
-  "diagnostic.hintSign": ">>",
-  // 不提示带文件修改的补全
-  "suggest.snippetIndicator": "",
+  "suggest.snippetIndicator": "", // 不提示是否为 snippet（默认有一个后缀的 ~ 表示为 snippet）
+  "suggest.disableMenu": true, // 不在补全列表右侧展示 [LS]
   "suggest.completionItemKindLabels": {
     "keyword": "",
     "variable": "",
@@ -27,7 +12,7 @@
     "constant": "",
     "method": "",
     "struct": "",
-    "class": "j",
+    "class": "",
     "interface": "",
     "text": "",
     "enum": "",
@@ -44,80 +29,80 @@
     "typeParameter": "",
     "default": ""
   },
-
-  // Scala Metals
-  "metals.statusBarEnabled": true,
-  "metals.enable": false,
-
+  // 错误、警告等提示符，全部使用默认值
+  // 特殊表情字符在不同端表现不一致（字符宽度的判断不同），可能会导致终端显示异常
+  // 主要是存在 U+FE0F VARIATION SELECTOR 的情况，Windows Terminal 会显示异常
+  "diagnostic.errorSign": ">>",
+  "diagnostic.warningSign": ">>",
+  "diagnostic.infoSign": ">>",
+  "diagnostic.hintSign": ">>",
+  "diagnostic.checkCurrentLine": true, // 当光标处无诊断信息时，显示该行的报错
+  "codeLens.enable": true,
+  // 保存时自动格式化
+  "coc.preferences.formatOnSaveFiletypes": [
+    "c",
+    "cpp",
+    "go",
+    "java",
+    "python",
+    "ruby",
+    "rust"
+  ],
+  "coc.source.file.triggerCharacters": [
+    "/"
+  ],
+  // 启用 neovim 自带的 semanticTokens 功能
+  "semanticTokens.filetypes": [
+    "*"
+  ],
+  // C++ Clangd
+  "clangd.enabled": true,
+  "clangd.arguments": [
+    "--all-scopes-completion",
+    "--background-index",
+    "--clang-tidy",
+    "--completion-style=detailed",
+    "--cross-file-rename",
+    "--header-insertion=iwyu",
+    "--limit-results=0",
+    "--pch-storage=memory"
+  ],
+  "clangd.fallbackFlags": [
+    "-std=c++20"
+  ],
+  "clangd.checkUpdates": true,
+  "clangd.compilationDatabasePath": "build/compile_commands.json",
+  "clangd.inlayHints.sep": "▶ ",
+  // Go GoPLS
+  "go.goplsOptions": {
+    "gofumpt": true,
+    "usePlaceholders": true,
+    "semanticTokens": true,
+    "allowModfileModifications": true,
+    "allowImplicitNetworkAccess": true,
+    "staticcheck": true
+  },
   // Python Pyright
   "python.formatting.provider": "black",
   "python.sortImports.path": "isort",
-
-  // Rust-Analyzer
-  "rust-analyzer.checkOnSave.command": "clippy",
-
-  // Ruby solargraph
+  // Ruby Solargraph
   "solargraph.diagnostics": true,
   "solargraph.formatting": true,
   "solargraph.transport": "stdio",
-
-
-  // 通用 LSP 配置
+  // Rust Rust-Analyzer
+  "rust-analyzer.checkOnSave.command": "clippy",
+  "rust-analyzer.inlayHints.chainingHintsSeparator": "▶ ",
+  "rust-analyzer.inlayHints.typeHintsSeparator": "▶ ",
+  "rust-analyzer.server.extraEnv": {
+  },
+  // Scala Metals
+  "metals.statusBarEnabled": true,
+  "metals.enable": false,
+  // Vim Vim-LSP
+  "vimlsp.indexes.count": 100,
+  "vimlsp.indexes.gap": 1,
+  // 自定义 LSP 配置
   "languageserver": {
-    "ccls": {
-      "command": "ccls",
-      "filetypes": [
-        "c",
-        "cpp",
-        "objc",
-        "objcpp"
-      ],
-      "rootPatterns": [
-        ".ccls",
-        "compile_commands.json",
-        ".vim/",
-        ".git/",
-        ".hg/"
-      ],
-      "initializationOptions": {
-        "cache": {
-          "directory": "/tmp/ccls"
-        },
-        "highlight": {
-          "lsRanges": true
-        },
-        "compilationDatabaseDirectory": "build",
-        "workspaceFolders": [],
-        "clang": {
-          "extraArgs": [
-            "-stdlib=libstdc++"
-          ]
-        },
-        "client":  {
-          "snippetSupport": true
-        }
-      }
-    },
-    "go": {
-      "command": "gopls",
-      "args": [],
-      "filetypes": [
-        "go"
-      ],
-      "rootPatterns": [
-        "go.mod",
-        ".git/",
-        ".hg/"
-      ],
-      "initializationOptions": {
-        "gofumpt": true,
-        "usePlaceholders": true,
-        "semanticTokens": true,
-        "allowModfileModifications": true,
-        "allowImplicitNetworkAccess": true,
-        "experimentalPostfixCompletions": true
-      }
-    },
     "haskell": {
       "command": "haskell-language-server-wrapper",
       "args": [
