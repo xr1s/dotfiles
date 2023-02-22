@@ -37,6 +37,7 @@ let g:polyglot_disabled = ['c/c++', 'cpp-modern']
 call plug#begin('~/.vim/plugged')
 Plug 'gruvbox-community/gruvbox'
 Plug 'neoclide/coc.nvim', { 'branch': 'release' }
+Plug 'ojroques/vim-oscyank'
 Plug 'preservim/nerdtree', { 'on': 'NERDTree' }
 Plug 'ryanoasis/vim-devicons'
 Plug 'sheerun/vim-polyglot'
@@ -54,6 +55,7 @@ augroup reload-vimrc
 augroup end
 " }}}
 
+set number
 " Leader {{{
 " 空格平时也没啥用，移动光标根本用不到
 " 作为 <Leader> 按起来也很方便
@@ -243,10 +245,10 @@ function! DeleteCurrentBuffer()
   endif
 
   " 优先处理列表中的缓冲（列表中的都是可见的，排除了如 NERDTree 之类插件打开的）
-  let blist = getbufinfo({'buflisted': 1, 'bufloaded': 1})
+  let blist = getbufinfo({'buflisted': 1})
   " 列表中没有缓冲了，但这种情况下可能还会存在插件打开的缓冲，开始处理未列出
   if len(blist) <=# 1
-    let blist = filter(getbufinfo(), 'len(v:val.windows) && !IsFloating(v:val.windows[0])')
+    let blist = filter(getbufinfo(), 'len(v:val.windows)')
     " 如果显示的窗口只剩自己，直接退出 vim，quit 自己会阻止有修改的缓冲被退出
     if len(blist) ==# 1 | quit | return | endif
   endif
@@ -320,13 +322,17 @@ highlight Identifier ctermfg=White
 " 结构体保持和其他内置类型、枚举类型相同高亮
 highlight link CocSemStruct Type
 highlight link CocSemTypeParameter Type
+" 修改 coc 的 virtual text 颜色，目前用的有些太突出了
+highlight CocInlayHint ctermfg=DarkGrey ctermbg=None
 
 " 补全
 " 按下 tab 时，若补全列表已经打开 pumvisible() 则候选项跳到下一条
 " 若未打开，当光标左侧字符是字母或几个特殊字符则弹出新的补全窗口，否则正常缩进
-inoremap <silent><expr> <Tab> pumvisible() ? '<C-N>' : <SID>NeedCompletion() ? coc#refresh() : '<Tab>'
+inoremap <silent><expr> <Tab>
+      \ coc#pum#visible() ? coc#pum#next(1) :
+      \ <SID>NeedCompletion() ? coc#refresh() : '<Tab>'
 " Shift+Tab 在补全中候选项往上移动
-inoremap <silent><expr> <S-Tab> pumvisible() ? '<C-P>' : '<S-Tab>'
+inoremap <silent><expr> <S-Tab> coc#pum#visible() ? coc#pum#prev(1) : '<C-H>'
 function! <SID>NeedCompletion() abort
   " TODO: 每个语言语言各自配置？
   let line = getline('.')
@@ -345,7 +351,8 @@ function! <SID>NeedCompletion() abort
 endfunction
 
 " 回车选中补全，同时使 coc 自动格式化代码，摘自 coc wiki
-inoremap <silent><expr> <CR> pumvisible() ? coc#_select_confirm() : '<C-G>u<CR><C-R>=coc#on_enter()<CR>'
+inoremap <silent><expr> <CR> coc#pum#visible() ? coc#pum#confirm() : 
+      \ '<C-G>u<CR><C-R>=coc#on_enter()<CR>'
 
 " 使用 <Leader>, <Leader>. 在错误提示间跳转
 nmap <silent> <Leader>, <Plug>(coc-diagnostic-prev)
@@ -397,6 +404,11 @@ noremap <silent> <Leader>ls :NERDTree<CR>
 noremap <silent> <Leader>ga :Git add % <Bar> qall<CR>
 " Git checkout 并关闭文件，主要用于提交前，我会 git diff 一下所有文件
 noremap <silent> <Leader>gc :Git checkout % <Bar> qall<CR>
+" }}}
+
+" OSCYank {{{
+let g:oscyank_term = 'default'
+autocmd TextYankPost * if v:event.operator is 'y' && v:event.regname is '' | execute 'OSCYankReg "' | endif
 " }}}
 
 " 临时为了 termdebug 加上的
