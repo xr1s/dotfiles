@@ -4,8 +4,8 @@ then
   # 初始化 WSL2 代理，这里自然可以用 GNU 扩展
   export HOSTALIASES="$HOME/.local/etc/hosts"
   windows=$(grep --fixed-strings nameserver /etc/resolv.conf | awk '{print $2}')
-  git config --global http.proxy $windows:10809
-  git config --global https.proxy $windows:10809
+  git config --global http.proxy $windows:7890
+  git config --global https.proxy $windows:7890
   sed --in-place "\:^windows:c windows $windows" "$HOSTALIASES"
   proxy_server="$windows"
 else
@@ -17,9 +17,9 @@ function proxy() {
   then
     unset http_proxy https_proxy socks_proxy no_proxy
   else
-    export http_proxy="http://$proxy_server:10809"
-    export https_proxy="http://$proxy_server:10809"
-    export socks_proxy="socks://$proxy_server:10808"
+    export http_proxy="http://$proxy_server:7890"
+    export https_proxy="http://$proxy_server:7890"
+    export socks_proxy="socks://$proxy_server:7890"
     export no_proxy='10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,fc00::/7'
   fi
 }  # }}}
@@ -38,9 +38,7 @@ export -UT TCLLIBPATH         tcllibpath
 export -UT CMAKE_PREFIX_PATH  prefix_path \;  # CMAKE_PREFIX_PATH 使用 ; 做分隔符
 
 # packages 里保存已安装的包路径名
-packages=(
-  nvim
-)
+packages=()
 
 function() {
   # 手动安装的软件，在 $OPT 下分目录隔离安装
@@ -102,14 +100,28 @@ fi
 # Go {{{
 if (( $+commands[go] )); then
   export GOPATH="$HOME/.go"
-  path+=("$GOPATH/bin")
+  path=("$GOPATH/bin" $path)
 fi
 # }}}
 # Haskell {{{
 [[ -s "$HOME/.ghcup/env" ]] && source "$HOME/.ghcup/env"
 # }}}
 # Homebrew {{{
-export HOMEBREW_NO_AUTO_UPDATE=1
+if [[ $(uname) == 'Darwin' ]]; then
+  export HOMEBREW_NO_AUTO_UPDATE=1
+  export HOMEBREW_NO_ANALYTICS=1
+  case $(uname -m) in
+    x86_64) HOMEBREW=/usr/local/homebrew;;
+    arm64)  HOMEBREW=/opt/homebrew;;
+  esac
+  export HOMEBREW_PREFIX=$HOMEBREW
+  export HOMEBREW_CELLAR=$HOMEBREW/Cellar
+  export HOMEBREW_REPOSITORY=$HOMEBREW
+  path=("$HOMEBREW_PREFIX/bin" "$HOMEBREW_PREFIX/sbin" $path)
+  manpath+=("$HOMEBREW_PREFIX/share/man")
+  infopath+=("$HOMEBREW_PREFIX/share/info")
+  unset HOMEBREW
+fi
 # }}}
 # Kubernetes {{{
 create-completion-placeholders kubectl kubeadm minikube helm
@@ -125,6 +137,10 @@ manpath+=("$HOME/.local/lib/site_perl/man")
 # Rust {{{
 [[ -s "$HOME/.cargo/env" ]] && source "$HOME/.cargo/env"
 create-completion-placeholders rustup
+# }}}
+# SDKMAN {{{
+export SDKMAN_DIR="$HOME/.sdkman"
+[[ -s "$HOME/.sdkman/bin/sdkman-init.sh" ]] && : > "$HOME/.local/share/zsh/functions/Completion/_sdk"
 # }}}
 # Vim {{{
 export MYVIMRC="$HOME/.vimrc"
@@ -320,6 +336,7 @@ function() {
 (( $+commands[bat] )) && alias hl='bat --paging=never --style=plain'
 (( $+commands[vim] )) && alias view="vim -R '+set nomodifiable'"
 (( $+commands[rsync] )) && alias rsync='rsync --partial --info=PROGRESS2'
+(( $+commands[sudo] )) && alias sudo='sudo -E '
 if uname -r | grep --ignore-case --quiet microsoft; then
   function open() {
     explorer.exe $(wslpath -w "$@")
