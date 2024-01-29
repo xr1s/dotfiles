@@ -28,7 +28,6 @@ endif
 " }}}
 
 " Vim-Plug {{{
-
 " Polyglot 要求该变量在载入插件前定义
 " 不高亮 c/c++ cpp-modern 是因为 LSP 的语义高亮插件可以更精确地高亮
 " 这两个定义了一堆内置类型来做关键字匹配高亮，会把不该高亮的给高亮了
@@ -78,6 +77,7 @@ set fileencodings=UTF-8,GB18030
 
 " 外观主题 {{{
 set background=dark
+set termguicolors
 colorscheme gruvbox
 " }}}
 
@@ -313,17 +313,20 @@ let g:airline#extensions#coc#enabled = 1
 let g:coc_config_home = expand('~/.vim')
 
 set cmdheight=2
-set updatetime=500
+
+set signcolumn=yes
 
 " 感觉默认的高亮有点混乱，改一下
 " （和我主题有关）变量和参数默认的颜色是加粗青色 cterm=bold ctermfg=14
 " 搞得和 coc.nvim 的未引用对象 CocUnusedHighlight 是同一个颜色，这能忍？
-highlight Identifier ctermfg=White
+highlight link Identifier CocSymbolVariable
 " 结构体保持和其他内置类型、枚举类型相同高亮
 highlight link CocSemStruct Type
 highlight link CocSemTypeParameter Type
 " 修改 coc 的 virtual text 颜色，目前用的有些太突出了
-highlight CocInlayHint ctermfg=DarkGrey ctermbg=None
+highlight CocInlayHint ctermfg=DarkGray ctermbg=None guifg=Gray guibg=None
+" coc 浮窗背景色和编辑器底色相同，无法区分边界
+highlight CocFloating ctermbg=DarkGray guibg=Gray32
 
 " 补全
 " 按下 tab 时，若补全列表已经打开 pumvisible() 则候选项跳到下一条
@@ -333,6 +336,10 @@ inoremap <silent><expr> <Tab>
       \ <SID>NeedCompletion() ? coc#refresh() : '<Tab>'
 " Shift+Tab 在补全中候选项往上移动
 inoremap <silent><expr> <S-Tab> coc#pum#visible() ? coc#pum#prev(1) : '<C-H>'
+" 回车选中补全，同时使 coc 自动格式化代码，摘自 coc wiki
+inoremap <silent><expr> <CR> coc#pum#visible() ? coc#pum#confirm() : 
+      \ '<C-G>u<CR><C-R>=coc#on_enter()<CR>'
+
 function! <SID>NeedCompletion() abort
   " TODO: 每个语言语言各自配置？
   let line = getline('.')
@@ -347,12 +354,9 @@ function! <SID>NeedCompletion() abort
   if currchar ==# '.' && prevchar !~# '\s' | return 1 | endif
   if currchar ==# '>' && prevchar !~# '\s' | return 1 | endif
   if currchar ==# ':' && prevchar !~# '\s' | return 1 | endif
+  if currchar ==# '/' | return 1 | endif
   return 0
 endfunction
-
-" 回车选中补全，同时使 coc 自动格式化代码，摘自 coc wiki
-inoremap <silent><expr> <CR> coc#pum#visible() ? coc#pum#confirm() : 
-      \ '<C-G>u<CR><C-R>=coc#on_enter()<CR>'
 
 " 使用 <Leader>, <Leader>. 在错误提示间跳转
 nmap <silent> <Leader>, <Plug>(coc-diagnostic-prev)
@@ -370,6 +374,8 @@ endfunction
 
 " 光标静止在标识符上的时候自动高亮文档内同名标识符
 autocmd CursorHold * silent! call CocActionAsync('highlight')
+" vim (not neovim) 需要手动配置，当 coc 状态改变时如找到所有函数引用重绘状态栏
+autocmd User CocStatusChange redraws
 
 " 格式化，不过我开了保存时自动格式化，这个基本用不着
 nnoremap <silent> <Leader>= <Plug>(coc-format)

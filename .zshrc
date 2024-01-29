@@ -5,7 +5,6 @@ then
   export HOSTALIASES="$HOME/.local/etc/hosts"
   windows=$(grep --fixed-strings nameserver /etc/resolv.conf | awk '{print $2}')
   git config --global http.proxy $windows:7890
-  git config --global https.proxy $windows:7890
   sed --in-place "\:^windows:c windows $windows" "$HOSTALIASES"
   proxy_server="$windows"
 else
@@ -19,8 +18,8 @@ function proxy() {
   else
     export http_proxy="http://$proxy_server:7890"
     export https_proxy="http://$proxy_server:7890"
-    export socks_proxy="socks://$proxy_server:7890"
-    export no_proxy='10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,fc00::/7'
+    export socks_proxy="socks5://$proxy_server:7890"
+    export no_proxy='10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,[fc00::/7]'
   fi
 }  # }}}
 
@@ -37,7 +36,7 @@ export -UT ACLOCAL_PATH       aclocal_path
 export -UT TCLLIBPATH         tcllibpath
 export -UT CMAKE_PREFIX_PATH  prefix_path \;  # CMAKE_PREFIX_PATH 使用 ; 做分隔符
 
-# packages 里保存已安装的包路径名
+# packages 里保存手动安装的包路径名
 packages=()
 
 function() {
@@ -72,14 +71,14 @@ function() {
 
 # 各应用环境变量 {{{
 function create-completion-placeholders() {
-  # 对于一些需要动态生成补全脚本的命令，这里只生成占位符，放到后面在 zinit【本地补全脚本】部分初始化
+  # 对于一些需要动态生成补全脚本的命令，这里只生成占位符，放到后面在 zinit「本地补全脚本」部分初始化
   # 不直接在此 source 补全脚本的原因是因为此时还没 autoload compinit && compinit，我不想打乱 zshrc 顺序
   # 而之所以留空不直接生成补全内容，是为了在二进制更新补全脚本后能及时生效，否则只是判断文件存在就不会更新了
   # 不每次都在这儿生成一遍补全是因为生成补全默认是阻塞的，想利用 zinit 的 turbo 模式异步初始化
   # 不过老实说我不清楚 turbo 模式在执行生成补全命令的时候能不能起作用，如果可以最好（感觉不行，那就算了）
   local ZSH_LOCAL_FPATH="$HOME/.local/share/zsh/functions/Completion"
   [[ ! -d $ZSH_LOCAL_FPATH ]] && rm -f $ZSH_LOCAL_FPATH && mkdir -p $ZSH_LOCAL_FPATH
-  for bin in $@; do
+  for bin in "$@"; do
     if (( $+commands[$bin] )) && [[ ! -f "$ZSH_LOCAL_FPATH/_$bin" ]]; then
       rm -rf "$ZSH_LOCAL_FPATH/_$bin" && : > "$ZSH_LOCAL_FPATH/_$bin"
     fi
@@ -134,9 +133,12 @@ export SSL_CERT_DIR='/etc/ssl/certs'
 path+=("$HOME/.local/lib/site_perl/bin")
 manpath+=("$HOME/.local/lib/site_perl/man")
 # }}}
+# Python {{{
+create-completion-placeholders pdm
+# }}}
 # Rust {{{
-[[ -s "$HOME/.cargo/env" ]] && source "$HOME/.cargo/env"
-create-completion-placeholders rustup
+[[ -d "$HOME/.cargo/bin" ]] && path=("$HOME/.cargo/bin" $path)
+create-completion-placeholders rustup rg
 # }}}
 # SDKMAN {{{
 export SDKMAN_DIR="$HOME/.sdkman"
@@ -179,7 +181,7 @@ setopt INTERACTIVE_COMMENTS    # 允许在交互模式使用注释（便于复�
 # }}}
 # zshparams {{{
 HISTFILE=~/.zsh_history                               # 历史命令储存文件
-HISTORY_IGNORE='(cd|cd *|ls|ls *)'                    # cd ls 等常见命令不追加历史
+HISTORY_IGNORE='(cd|cd *|ls|ls *|:q|q)'               # cd ls 等常见命令不追加历史
 HISTSIZE=20000                                        # 启动时加载历史数量
 SAVEHIST=10000                                        # 文件储存历史数量
 WORDCHARS=''                                          # 只有字母数字作为一个单词
@@ -193,7 +195,7 @@ function _zshaddhistory() {
   # 考虑到可能存在忘记安装软件，后续仍然需要记忆该历史的情况，返回 2 先缓存历史于内存中
   # $1 就是新输入的命令，这里使用 eval 来做简单语法解析（为了处理 arg0 中含有空格这类极端情况）
   # 为了防止一些关键字导致 eval 出两条语句，替换 ; 为 \; 等，noglob 防止特殊字符在 eval 中被展开
-  eval noglob set -- $(sed -E 's:[;&|<>{}\\]:\\\0:g' <<< $1)
+  eval noglob set -- $(sed -E 's:[;&|<>{}\\]:\\\0:g' <<< ${1//function/})
   # 过滤前缀的变量定义，shift 直到拿到第一个不带等号的作为 arg0
   # FIXME: 考虑 arg0 中带有等号的情况
   # 不过这情况不好处理，目前看起来是把写出 arg0 中带等号的代码的人揍一顿效率比改代码更高
@@ -220,8 +222,9 @@ bindkey -- "$key[Up]"   history-beginning-search-backward  # 上键向前搜索�
 bindkey -- "$key[Down]" history-beginning-search-forward   # 下键向后搜索命令
 bindkey -- '^P' history-beginning-search-backward          # C-P 向前搜索命令
 bindkey -- '^N' history-beginning-search-forward           # C-N 向后搜索命令
-bindkey -M menuselect '^[[Z' reverse-menu-complete      # 补全菜单 S-Tab 选择上一条
-bindkey '^X^E' edit-command-line                        # C-X C-E 进入编辑器编辑模式
+bindkey -- '^H' backward-kill-word                         # C-Backspace 删除上一个单词
+bindkey -M menuselect '^[[Z' reverse-menu-complete         # 补全菜单 S-Tab 选择上一条
+bindkey '^X^E' edit-command-line                           # C-X C-E 进入编辑器编辑模式
 
 function expand-dots() {
   # 当光标左侧的内容包含连续三个以上点时候，递归执行替换 ... ->  ../..
@@ -277,7 +280,7 @@ zinit lucid for \
 # 只要输入 make 就会试图解析 Makefile 并高亮，遇到复杂文件会直接导致命令行挂死，所以在载入时取消 make 的高亮
 zinit wait lucid for \
   OMZP::pip \
-  pick'bin/rbenv' as'program' atload'eval "$(bin/rbenv init - zsh)"' \
+  pick'bin/rbenv' as'program' wait'[[ -f Gemfile ]]' atload'eval "$(bin/rbenv init - zsh)"' \
   rbenv/rbenv \
   pick'bin/ruby-build' as'program' \
   rbenv/ruby-build \
@@ -288,17 +291,19 @@ zinit wait lucid for \
 zinit wait lucid as'completion' for \
   mv'838a7f1b39e81ee0c06cfa959e6e97f6152019b04e10aab719c6fb118b415253 -> _fossil' \
   https://fossil-scm.org/home/raw/838a7f1b39e81ee0c06cfa959e6e97f6152019b04e10aab719c6fb118b415253 \
-  https://github.com/BurntSushi/ripgrep/blob/master/complete/_rg \
   https://github.com/docker/cli/blob/master/contrib/completion/zsh/_docker \
+  as'program' atclone'compdef _gradle gradle gradlew' atpull'%atclone' \
   https://github.com/gradle/gradle-completion/blob/master/_gradle \
   https://github.com/mesonbuild/meson/blob/master/data/shell-completions/zsh/_meson \
   mv'zsh-completion -> _ninja' \
   https://github.com/ninja-build/ninja/blob/master/misc/zsh-completion \
-  https://github.com/ogham/exa/blob/master/completions/zsh/_exa \
+  https://github.com/eza-community/eza/blob/main/completions/zsh/_eza \
   https://github.com/rust-lang/cargo/blob/master/src/etc/_cargo \
   as'program' atclone'sed "s:{{PROJECT_EXECUTABLE}}:bat:g" bat.zsh.in > _bat' atpull'%atclone' \
   https://github.com/sharkdp/bat/blob/master/assets/completions/bat.zsh.in \
   https://github.com/sharkdp/fd/blob/master/contrib/completion/_fd \
+  atload'source register-completions.zsh' \
+  https://github.com/xmake-io/xmake/blob/master/xmake/scripts/completions/register-completions.zsh \
   https://github.com/zsh-users/zsh-completions/blob/master/src/_bundle \
   https://github.com/zsh-users/zsh-completions/blob/master/src/_cmake \
   https://github.com/zsh-users/zsh-completions/blob/master/src/_golang \
@@ -312,8 +317,12 @@ zinit wait lucid as'completion' for \
 # 本地补全脚本
 function() {
   local ZSH_LOCAL_FPATH="$HOME/.local/share/zsh/functions/Completion"
+  [[ -f "$ZSH_LOCAL_FPATH/_pdm" ]] \
+    && zinit wait lucid is-snippet wait'[[ -f .pdm.toml ]]' atload'source <(pdm completion zsh | head -n -3); compdef _pdm pdm' for "$ZSH_LOCAL_FPATH/_pdm"
   [[ -f "$ZSH_LOCAL_FPATH/_rustup" ]] \
-    && zinit wait lucid is-snippet atload'eval "$(rustup completions zsh rustup | sed \$d); compdef _rustup rustup"' for "$ZSH_LOCAL_FPATH/_rustup"
+    && zinit wait lucid is-snippet atload'source <(rustup completions zsh rustup | head -n -1); compdef _rustup rustup' for "$ZSH_LOCAL_FPATH/_rustup"
+  [[ -f "$ZSH_LOCAL_FPATH/_rg" ]] \
+    && zinit wait lucid is-snippet atload'source <(rg --generate=complete-zsh | rg --invert-match "^_rg\s"); compdef _rg rg' for "$ZSH_LOCAL_FPATH/_rg"
   [[ -f "$ZSH_LOCAL_FPATH/_kubectl" ]] \
     && zinit wait lucid is-snippet atload'source <(kubectl completion zsh)' for "$ZSH_LOCAL_FPATH/_kubectl"
   [[ -f "$ZSH_LOCAL_FPATH/_kubeadm" ]] \
@@ -322,21 +331,26 @@ function() {
     && zinit wait lucid is-snippet atload'source <(minikube completion zsh)' for "$ZSH_LOCAL_FPATH/_minikube"
   [[ -f "$ZSH_LOCAL_FPATH/_helm" ]] \
     && zinit wait lucid is-snippet atload'source <(helm completion zsh)' for "$ZSH_LOCAL_FPATH/_helm" 
+  [[ -f "$ZSH_LOCAL_FPATH/_sdk" ]] \
+    && zinit wait lucid is-snippet \
+      atload'source $SDKMAN_DIR/bin/sdkman-init.sh' \
+      atload'include_path=($JAVA_HOME/include $JAVA_HOME/include/linux $include_path)' \
+      atload'ld_library_path=($JAVA_HOME/lib $JAVA_HOME/lib/server $ld_library_path)' \
+      for "$ZSH_LOCAL_FPATH/_sdk" 
 }
 # systemd 补全脚本
 # 可能是版本问题，systemctl 不支持补全脚本中的 --legend=no，因此手动替换成 --no-legend
 (( $+commands[systemctl] )) && zinit wait lucid as'completion' for \
   https://github.com/systemd/systemd/blob/main/shell-completion/zsh/_journalctl \
-  as'program' atclone'sed -e"s:{{ROOTLIBEXECDIR}}/::g" -e"s:--legend=no:--no-legend:g" _systemctl.in > _systemctl' atpull'%atclone' \
+  as'program' atclone'sed -e"s:{{LIBEXECDIR}}:/usr/lib:g" _systemctl.in > _systemctl' atpull'%atclone' \
   https://github.com/systemd/systemd/blob/main/shell-completion/zsh/_systemctl.in
 # }}}
 
 # 自定义脚本 {{{
-(( $+commands[exa] )) && alias ls='exa --long --color-scale --binary --header --time-style=long-iso'
+(( $+commands[eza] )) && alias ls='eza --long --binary --header --time-style=long-iso'
 (( $+commands[bat] )) && alias hl='bat --paging=never --style=plain'
 (( $+commands[vim] )) && alias view="vim -R '+set nomodifiable'"
 (( $+commands[rsync] )) && alias rsync='rsync --partial --info=PROGRESS2'
-(( $+commands[sudo] )) && alias sudo='sudo -E '
 if uname -r | grep --ignore-case --quiet microsoft; then
   function open() {
     explorer.exe $(wslpath -w "$@")
@@ -346,13 +360,13 @@ fi
 function highlight-log() {
   awk -v IGNORECASE=1 \
     '{ gsub(/\033\[[0-9;]*?\w/, "") }
-    /^Fatal\>|"level":"fatal"|level=fatal/    { print "\033[1;31m" $0 "\033[m"; next }
-    /^Error\>|"level":"error"|level=error/    { print "\033[31m"   $0 "\033[m"; next }
-    /^Warn\>|"level":"warning"|level=warn/    { print "\033[33m"   $0 "\033[m"; next }
-    /^Notice\>|"level":"notice"|level=notice/ { print "\033[35m"   $0 "\033[m"; next }
-    /^Info\>|"level":"info"|level=info/       { print "\033[32m"   $0 "\033[m"; next }
-    /^Debug\>|"level":"debug"|level=debug/    { print "\033[34m"   $0 "\033[m"; next }
-    /^Trace\>|"level":"trace"|level=trace/    { print "\033[36m"   $0 "\033[m"; next }
+    /^Fatal\>|"level":"fatal"|level=fatal/    { print "\033[31m" $0 "\033[m"; next }
+    /^Error\>|"level":"error"|level=error/    { print "\033[1;31m"   $0 "\033[m"; next }
+    /^Warn\>|"level":"warning"|level=warn/    { print "\033[1;33m"   $0 "\033[m"; next }
+    /^Notice\>|"level":"notice"|level=notice/ { print "\033[1;34m"   $0 "\033[m"; next }
+    /^Info\>|"level":"info"|level=info/       { print "\033[1;32m"   $0 "\033[m"; next }
+    /^Debug\>|"level":"debug"|level=debug/    { print "\033[1;35m"   $0 "\033[m"; next }
+    /^Trace\>|"level":"trace"|level=trace/    { print "\033[1;36m"   $0 "\033[m"; next }
     1'
 }
 # }}}

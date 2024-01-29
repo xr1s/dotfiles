@@ -3,8 +3,6 @@
   // 不提示是否为 snippet（默认有一个后缀的 ~ 表示为 snippet）
   "suggest.snippetIndicator": "",
   // 需要按一下 Tab 来选中第一个不全列表选项
-  "suggest.enablePreselect": false,
-  "suggest.noselect": true,
   // 补全提示
   "suggest.completionItemKindLabels": {
     "keyword": "",
@@ -40,27 +38,19 @@
   "diagnostic.warningSign": ">>",
   "diagnostic.infoSign": ">>",
   "diagnostic.hintSign": ">>",
+  "diagnostic.showUnused": true,
   "diagnostic.checkCurrentLine": true, // 当光标处无诊断信息时，显示该行的报错
   "codeLens.enable": true,
   // 保存时自动格式化
-  "coc.preferences.formatOnSaveFiletypes": [
-    "c",
-    "cpp",
-    "go",
-    "java",
-    "python",
-    "ruby",
-    "rust",
-    "typescript"
-  ],
+  "coc.preferences.formatOnSave": true,
   "coc.source.file.triggerCharacters": [
     "/"
   ],
   // 启用 neovim 自带的 semanticTokens 功能
   "semanticTokens.enable": true,
-  // "semanticTokens.filetypes": [
-  //   "*"
-  // ],
+  "http.proxy": "http://127.0.0.1:7890",
+  //
+  // LSP 配置
   // C++ Clangd
   "clangd.enabled": true,
   "clangd.arguments": [
@@ -77,11 +67,17 @@
   "clangd.fallbackFlags": [],
   "clangd.checkUpdates": true,
   "clangd.compilationDatabasePath": "build",
-  "clangd.inlayHints.sep": "▶ ",
+  // Java JDT
+  "java.format.onType.enabled": false,
+  "java.referencesCodeLens.enabled": true,
+  "java.signatureHelp.enabled": true,
   // Go GoPLS
   "go.goplsOptions": {
     "allowModfileModifications": true,
     "allowImplicitNetworkAccess": true,
+    "analyses": {
+      "SA5008": false,
+    },
     "gofumpt": true,
     "hints": {
       "assignVariableTypes": true,
@@ -94,11 +90,10 @@
     },
     "semanticTokens": true,
     "staticcheck": true,
-    "usePlaceholders": true
+    "usePlaceholders": true,
   },
   // Python Pyright
-  "python.formatting.provider": "black",
-  "python.sortImports.path": "isort",
+  "python.formatting.provider": "ruff",
   "python.linting.mypyEnabled": true,
   "python.linting.flake8Enabled": true,
   "python.linting.banditEnabled": true,
@@ -108,7 +103,8 @@
   "python.linting.prospectorEnabled": true,
   "python.linting.pydocstyleEnabled": true,
   "python.linting.pycodestyleEnabled": true,
-  "pyright.organizeimports.provider": "isort",
+  "python.linting.ruffEnabled": true,
+  "pyright.organizeimports.provider": "ruff",
   // Ruby Solargraph
   "solargraph.diagnostics": true,
   "solargraph.formatting": true,
@@ -117,156 +113,16 @@
   "rust-analyzer.enable": true,
   // 进入 terminal 时直接进入插入模式
   "rust-analyzer.terminal.startinsert": true,
+  // 启用 clippy 作为 linter
+  "rust-analyzer.check.command": "clippy",
   // 使用 vimspector 作为调试运行时（未安装 vimspector）
   "rust-analyzer.debug.runtime": "vimspector",
   "rust-analyzer.debug.vimspector.configuration.name": "launch",
-  // (默认) rust-analyzer 可执行文件路径，留空则插件会自动下载更新
-  "rust-analyzer.server.path": null,
-  // (默认) 增加启动服务的时候的环境变量，一般用于调试
-  "rust-analyzer.server.extraEnv": null,
-  // (默认) 当监测到配置更新时不自动重启 rust-analyzer，会弹窗提示
-  "rust-analyzer.restartServerOnConfigChange": false,
-  // (默认) 关闭调试日志
-  "rust-analyzer.trace.server": "off",
-  // (默认) 当检测到 rust-analyzer 有更新时候弹窗询问是否更新
-  "rust-analyzer.updates.prompt": true,
-  // (默认) 在启动时自动检查是 rust-analyzer 否有更新
-  "rust-analyzer.updates.checkOnStartup": true,
-  // (默认) 使用 todo! 来自动填充 LSP 生成的代码
-  "rust-analyzer.assist.expressionFillDefault": "todo",
-  // (默认) 打开项目时预热（？）缓存
-  "rust-analyzer.cachePriming.enable": true,
-  // (默认) 自动选择预热缓存线程数
-  "rust-analyzer.cachePriming.numThreads": 0,
-  // (默认) 在监测到 Cargo.toml 等文件更新时自动更新项目
-  "rust-analyzer.cargo.autoreload": true,
-  // (默认) 执行 build.rs
-  "rust-analyzer.cargo.buildScripts.enable": true,
-  // (默认) rust-analyzer 用来执行 build.rs 和宏的命令
-  "rust-analyzer.cargo.buildScripts.overrideCommand": null,
-  // (默认) 使用 rust-analyzer 包装的解释器执行 build.rs 避免执行多余逻辑
-  "rust-analyzer.cargo.buildScripts.useRustcWrapper": true,
-  // (默认)
-  "rust-analyzer.cargo.features": [],
-  // 分析时打开本项目的所有 features --all-features
-  "rust-analyzer.cargo.allFeatures": true,
-  // (默认)
-  "rust-analyzer.cargo.noDefaultFeatures": false,
-  // (默认) 调试用选项，使 cargo 不载入 sysroot 仓库
-  "rust-analyzer.cargo.noSysroot": false,
-  // (默认) 编译目标架构
-  "rust-analyzer.cargo.target": null,
-  // (默认) 
-  "rust-analyzer.cargo.unsetTest": [
-    "core"
-  ],
-  // (默认)
-  "rust-analyzer.checkOnSave.allTargets": true,
-  // 使用 cargo clippy 来做更丰富的错误检查和代码 Lint（默认使用 cargo check，只检查编译错误和警告）
-  "rust-analyzer.checkOnSave.command": "clippy",
-  // (默认)
-  "rust-analyzer.checkOnSave.enable": true,
-  // 传递给 rust-analyzer.checkOnSave.command 的参数
-  // 这里选择跳过依赖检查
-  "rust-analyzer.checkOnSave.extraArgs": [
-    "--no-deps"
-  ],
-  // 传递 all 表示开启所有 features（不如索性开新选项）
-  "rust-analyzer.checkOnSave.features": "all",
-  // (默认)
-  "rust-analyzer.checkOnSave.noDefaultFeatures": null,
-  // (默认)
-  "rust-analyzer.checkOnSave.overrideCommand": null,
-  // (默认) 使用 rust-analyzer.cargo.target
-  "rust-analyzer.checkOnSave.target": null,
-  // (默认)
-  "rust-analyzer.completion.autoimport.enable": true,
-  // (默认) 似乎就是给 self 生成补全
-  "rust-analyzer.completion.autoself.enable": true,
-  // (默认) 给函数调用自动填充括号和参数的代码片段
-  "rust-analyzer.completion.callable.snippets": "fill_arguments",
-  // (默认) .dbg, .if, .not 等填充代码片段为 dbg!, if , ! 等
-  "rust-analyzer.completion.postfix.enable": true,
   // 补全列表展示同一个工作区下定义的不可访问的私有成员
   // 因为个人经常忘记写 pub，或者 pub 不够激进，需要慢慢调整
-  "rust-analyzer.completion.privateEditable.enable": true,
-  // (默认)
-  "rust-analyzer.completion.snippets.custom": {
-    "Arc::new": {
-      "postfix": "arc",
-      "body": "Arc::new(${receiver})",
-      "requires": "std::sync::Arc",
-      "description": "Put the expression into an `Arc`",
-      "scope": "expr"
-    },
-    "Rc::new": {
-      "postfix": "rc",
-      "body": "Rc::new(${receiver})",
-      "requires": "std::rc::Rc",
-      "description": "Put the expression into an `Rc`",
-      "scope": "expr"
-    },
-    "Box::pin": {
-      "postfix": "pinbox",
-      "body": "Box::pin(${receiver})",
-      "requires": "std::boxed::Box",
-      "description": "Put the expression into a pinned `Box`",
-      "scope": "expr"
-    },
-    "Ok": {
-      "postfix": "ok",
-      "body": "Ok(${receiver})",
-      "description": "Wrap the expression in a `Result::Ok`",
-      "scope": "expr"
-    },
-    "Err": {
-      "postfix": "err",
-      "body": "Err(${receiver})",
-      "description": "Wrap the expression in a `Result::Err`",
-      "scope": "expr"
-    },
-    "Some": {
-      "postfix": "some",
-      "body": "Some(${receiver})",
-      "description": "Wrap the expression in an `Option::Some`",
-      "scope": "expr"
-    }
-  },
-  // (默认)
-  "rust-analyzer.diagnostics.disabled": [],
-  // (默认)
-  "rust-analyzer.diagnostics.enable": true,
+  "rust-analyzer.completion.privateEditable.enable": false,
   // 开启实验中的错误报告特性
   "rust-analyzer.diagnostics.experimental.enable": true,
-  // (默认) 用来把错误提示中的文件路径进行字符串替换
-  // 比如将一长串 "/home/username/.cargo/src/github..." 替换为 "[.cargo]"
-  "rust-analyzer.diagnostics.remapPrefix": {},
-  // (默认)
-  "rust-analyzer.diagnostics.warningsAsHint": [],
-  // (默认)
-  "rust-analyzer.diagnostics.warningsAsInfo": [],
-  // (默认)
-  "rust-analyzer.files.excludeDirs": [],
-  // (默认) 客户端实现文件监听
-  "rust-analyzer.files.watcher": "client",
-  // (默认) 光标处于 loop for while break continue 上时自动高亮对应循环的其他控制关键字
-  "rust-analyzer.highlightRelated.breakPoints.enable": true,
-  // (默认) 光标处于 return ? fn 上时自动高亮对应函数的其它控制关键字
-  "rust-analyzer.highlightRelated.exitPoints.enable": true,
-  // (默认) 开启同结构关联关键字高亮提示（见上下）
-  "rust-analyzer.highlightRelated.references.enable": true,
-  // (默认) 光标处于 async await 的时候高亮对应异步块的其它控制关键字
-  "rust-analyzer.highlightRelated.yieldPoints.enable": true,
-  // (默认) 悬停浮窗展示代码文档
-  "rust-analyzer.hover.documentation.enable": true,
-  // (默认) 对悬停浮窗中的链接使用 Markdown 语法展示
-  "rust-analyzer.hover.links.enable": true,
-  // (默认) 由 rust-analyzer 根据文件情况来决定导入粒度
-  "rust-analyzer.imports.granularity.enforce": false,
-  // (默认) 自动导入的包按照 crate 级别分组
-  "rust-analyzer.imports.granularity.group": "crate",
-  // (默认)
-  "rust-analyzer.imports.group.enable": true,
   // 不允许使用 import crate::* 自动合并导入，避免找不到来源
   "rust-analyzer.imports.merge.glob": false,
   // 导入子模块也使用 self 前缀，"crate" 则不添加 self 前缀
@@ -290,20 +146,8 @@
   // let s = String::new(); let ip = std::net::IpAddr::V4(todo!()); let u = chrono::Utc;
   // 对于未直接写完整泛型参数的类型则会提示，如 let v = Vec::new();
   "rust-analyzer.inlayHints.typeHints.hideNamedConstructor": true,
-  // (默认)
-  "rust-analyzer.joinLines.joinAssignments": true,
-  // (默认)
-  "rust-analyzer.joinLines.joinElseIf": true,
-  // (默认)
-  "rust-analyzer.joinLines.removeTrailingComma": true,
-  // (默认)
-  "rust-analyzer.joinLines.unwrapTrivialBlock": true,
-  // （默认）开启调试 CodeLens
-  "rust-analyzer.lens.debug.enable": true,
-  // （默认）开启 CodeLens
-  "rust-analyzer.lens.enable": true,
-  // （默认）开启执行 CodeLens
-  "rust-analyzer.lens.run.enable": true,
+  // 禁用 Code Lens，因为会不停跳
+  "rust-analyzer.lens.enable": false,
   // }}}
   // Scala Metals
   "metals.statusBarEnabled": true,
@@ -351,6 +195,7 @@
         "lhaskell"
       ]
     }
-  }
+  },
+  "snippets.ultisnips.pythonPrompt": false,
 }
 // vim: foldmethod=marker
