@@ -1,25 +1,13 @@
 # 代理是头等大事 {{{
-if uname -r | grep --ignore-case --quiet microsoft
-then
-  # 初始化 WSL2 代理，这里自然可以用 GNU 扩展
-  export HOSTALIASES="$HOME/.local/etc/hosts"
-  windows=$(grep --fixed-strings nameserver /etc/resolv.conf | awk '{print $2}')
-  git config --global http.proxy $windows:7890
-  sed --in-place "\:^windows:c windows $windows" "$HOSTALIASES"
-  proxy_server="$windows"
-else
-  proxy_server='localhost'
-fi
-
 function proxy() {
   if [[ $1 == 'off' ]]
   then
     unset http_proxy https_proxy socks_proxy no_proxy
+    unset HTTP_PROXY HTTPS_PROXY SOCKS_PROXY NO_PROXY
   else
-    export http_proxy="http://$proxy_server:7890"
-    export https_proxy="http://$proxy_server:7890"
-    export socks_proxy="socks5://$proxy_server:7890"
-    export no_proxy='10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,[fc00::/7]'
+    export http_proxy="http://localhost:7897"
+    export https_proxy="http://localhost:7897"
+    export socks_proxy="socks5://localhost:7897"
   fi
 }  # }}}
 
@@ -307,20 +295,14 @@ zinit wait lucid as'completion' for \
   https://github.com/zsh-users/zsh-completions/blob/master/src/_bundle \
   https://github.com/zsh-users/zsh-completions/blob/master/src/_cmake \
   https://github.com/zsh-users/zsh-completions/blob/master/src/_golang \
-  https://github.com/zsh-users/zsh-completions/blob/master/src/_openssl \
-  mv'zsh_completion -> _hg' \
-  https://www.mercurial-scm.org/repo/hg/raw-file/tip/contrib/zsh_completion \
-  OMZP::adb/_adb \
-  OMZP::gem/_gem \
-  OMZP::rails/_rails \
-  OMZP::nvm/_nvm
+  https://github.com/zsh-users/zsh-completions/blob/master/src/_openssl
 # 本地补全脚本
 function() {
   local ZSH_LOCAL_FPATH="$HOME/.local/share/zsh/functions/Completion"
   [[ -f "$ZSH_LOCAL_FPATH/_pdm" ]] \
     && zinit wait lucid is-snippet wait'[[ -f .pdm.toml ]]' atload'source <(pdm completion zsh | head -n -3); compdef _pdm pdm' for "$ZSH_LOCAL_FPATH/_pdm"
   [[ -f "$ZSH_LOCAL_FPATH/_rustup" ]] \
-    && zinit wait lucid is-snippet atload'source <(rustup completions zsh rustup | head -n -1); compdef _rustup rustup' for "$ZSH_LOCAL_FPATH/_rustup"
+    && zinit wait lucid is-snippet has'rg' atload'source <(rustup completions zsh rustup); compdef _rustup rustup' for "$ZSH_LOCAL_FPATH/_rustup"
   [[ -f "$ZSH_LOCAL_FPATH/_rg" ]] \
     && zinit wait lucid is-snippet atload'source <(rg --generate=complete-zsh | rg --invert-match "^_rg\s"); compdef _rg rg' for "$ZSH_LOCAL_FPATH/_rg"
   [[ -f "$ZSH_LOCAL_FPATH/_kubectl" ]] \
@@ -350,10 +332,10 @@ function() {
 (( $+commands[eza] )) && alias ls='eza --long --binary --header --time-style=long-iso'
 (( $+commands[bat] )) && alias hl='bat --paging=never --style=plain'
 (( $+commands[vim] )) && alias view="vim -R '+set nomodifiable'"
-(( $+commands[rsync] )) && alias rsync='rsync --partial --info=PROGRESS2'
+(( $+commands[rsync] )) && alias rsync='rsync --partial --info=PROGRESS2 --protect-args'
 if uname -r | grep --ignore-case --quiet microsoft; then
   function open() {
-    explorer.exe $(wslpath -w "$@")
+    explorer.exe "$(wslpath -w "$@")" || true
   }
 fi
 

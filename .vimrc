@@ -55,6 +55,8 @@ augroup end
 " }}}
 
 set number
+set diffopt+=internal,algorithm:minimal
+
 " Leader {{{
 " 空格平时也没啥用，移动光标根本用不到
 " 作为 <Leader> 按起来也很方便
@@ -317,16 +319,14 @@ set cmdheight=2
 set signcolumn=yes
 
 " 感觉默认的高亮有点混乱，改一下
-" （和我主题有关）变量和参数默认的颜色是加粗青色 cterm=bold ctermfg=14
-" 搞得和 coc.nvim 的未引用对象 CocUnusedHighlight 是同一个颜色，这能忍？
-highlight link Identifier CocSymbolVariable
 " 结构体保持和其他内置类型、枚举类型相同高亮
-highlight link CocSemStruct Type
-highlight link CocSemTypeParameter Type
+highlight link CocSemTypeStruct Type
+highlight link CocSemTypeTypeParameter Type
 " 修改 coc 的 virtual text 颜色，目前用的有些太突出了
-highlight CocInlayHint ctermfg=DarkGray ctermbg=None guifg=Gray guibg=None
+highlight CocInlayHint ctermfg=DarkGray ctermbg=NONE guifg=Gray guibg=NONE
 " coc 浮窗背景色和编辑器底色相同，无法区分边界
-highlight CocFloating ctermbg=DarkGray guibg=Gray32
+highlight CocFloating ctermbg=DarkGray guibg=Gray
+highlight CocMenuSel ctermbg=237 guibg=#3f3f3f
 
 " 补全
 " 按下 tab 时，若补全列表已经打开 pumvisible() 则候选项跳到下一条
@@ -389,6 +389,8 @@ nnoremap <silent> <Leader>f <Plug>(coc-references)
 nnoremap <silent> <Leader>a <Plug>(coc-codeaction-line)
 " code lens
 nnoremap <silent> <Leader>len <Plug>(coc-codelens-action)
+" 开关 inlay hints
+nnoremap <silent> <Leader>t :CocCommand document.toggleInlayHint<CR>
 " 重构：rn 是 rename 的缩写
 nnoremap <silent> <Leader>rn <Plug>(coc-refactor)
 " }}}
@@ -417,8 +419,5 @@ let g:oscyank_term = 'default'
 autocmd TextYankPost * if v:event.operator is 'y' && v:event.regname is '' | execute 'OSCYankRegister "' | endif
 " }}}
 
-" 临时为了 termdebug 加上的
-" termdebug 还没配，暂时不放上来
-tnoremap <Esc> <C-\><C-N>
-
+nnoremap <silent> <Leader>h :CocCommand semanticTokens.inspect<CR>
 " vim: foldmethod=marker

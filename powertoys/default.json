@@ -1,0 +1,72 @@
+// %LOCALAPPDATA%\Microsoft\PowerToys\Keyboard Manager\default.json
+// 使用前可以使用下面的代码删掉所有注释
+// Microsoft PowerToys 配置 JSON 不支持注释符
+// sed -E -e '\:^\s*(//|#):d' -e 's:\s*(//|#).*$::g' default.json
+{
+  "remapKeys": {
+    "inProcess": [
+      // Caps Lock => Ctrl (Left)
+      {"originalKeys": "20", "newRemapKeys": "163"},
+      // F22 => Disabled, 处理他妈的微信破坏 PowerToys 键盘映射的问题
+      {"originalKeys": "133", "newRemapKeys": "256"}
+    ]
+  },
+  "remapShortcuts": {
+    "global": [
+      // Ctrl + A 光标移动到行首: Ctrl (Right) + A => Home
+      {"originalKeys": "163;65", "newRemapKeys": "36"},
+      // Ctrl + B 光标左移一格: Ctrl (Right) + B => Left
+      {"originalKeys": "163;66", "newRemapKeys": "37"},
+      // Ctrl + E 光标移动到行尾: Ctrl (Left) + E => End
+      {"originalKeys": "163;69", "newRemapKeys": "35"},
+      // Ctrl + F 光标右移一格: Ctrl (Left) + F => Right
+      {"originalKeys": "163;70", "newRemapKeys": "39"},
+      // Ctrl + N 光标下移一行: Ctrl (Left) + N => Down
+      {"originalKeys": "163;78", "newRemapKeys": "40"},
+      // Ctrl + P 光标上移一行: Ctrl (Left) + P => Up
+      {"originalKeys": "163;80", "newRemapKeys": "38"},
+
+      // 这里开始是绑定被上面覆盖的原常用 Ctrl 快捷键到 Win 上
+      // Win + A 全选文本: Win (Left) + A => Ctrl (Left) + A
+      {"originalKeys": "91;65", "newRemapKeys": "162;65"},
+      // Win + C 复制选中文本: Win (Left) + C => Ctrl (Left) + C
+      {"originalKeys": "91;67", "newRemapKeys": "162;67"},
+      // Win + F 打开搜索框: Win (Left) + F => Ctrl (Left) + F
+      {"originalKeys": "91;70", "newRemapKeys": "162;70"},
+      // Win + N 新建窗口: Win (Left) + N => Ctrl (Left) + N
+      {"originalKeys": "91;78", "newRemapKeys": "162;78"},
+      // Win + S 保存: Win (Left) + S => Ctrl (Left) + S
+      {"originalKeys": "91;83", "newRemapKeys": "162;83"},
+      // Win + V 粘贴: Win (Left) + V => Ctrl (Left) + V
+      {"originalKeys": "91;86", "newRemapKeys": "162;86"},
+      // Win + X 剪切: Win (Left) + X => Ctrl (Left) + X
+      {"originalKeys": "91;88", "newRemapKeys": "162;88"},
+      // Win + Z 撤销: Win (Left) + Z => Ctrl (Left) + Z
+      {"originalKeys": "91;90", "newRemapKeys": "162;90"},
+      // Win + Shift + N 无痕窗口: Win (Left) + Shift (Left) + N => Ctrl (Left) + Shift (Left) + N
+      {"originalKeys": "91;160;78", "newRemapKeys": "162;160;78"},
+
+      // 这块一般是对 Alt 快捷键的映射，一般是光标按单词移动的快捷键
+      // 删除光标左侧的一个单词: Alt (Left) + Backspace => Ctrl (Left) + Backspace
+      {"originalKeys": "164;8", "newRemapKeys": "163;8"},
+      // 光标向左移动一个单词: Alt (Left) + B => Ctrl (Left) + Left
+      {"originalKeys": "164;66", "newRemapKeys": "163;37"},
+      // 光标向左移动一个单词: Alt (Left) + F => Ctrl (Left) + Right
+      {"originalKeys": "164;70", "newRemapKeys": "163;39"},
+
+      // Alt (Left) + Win + F => Disabled, 禁用他妈的反馈中心快捷键
+      {"originalKeys": "91;164;70", "newRemapKeys": "256"}
+    ],
+    "appSpecific": [
+      {"originalKeys": "163;65", "newRemapKeys": "163;65", "targetApp": "WindowsTerminal"},
+      {"originalKeys": "163;66", "newRemapKeys": "163;66", "targetApp": "WindowsTerminal"},
+      {"originalKeys": "163;69", "newRemapKeys": "163;69", "targetApp": "WindowsTerminal"},
+      {"originalKeys": "163;70", "newRemapKeys": "163;70", "targetApp": "WindowsTerminal"},
+      {"originalKeys": "163;78", "newRemapKeys": "163;78", "targetApp": "WindowsTerminal"},
+      {"originalKeys": "163;80", "newRemapKeys": "163;80", "targetApp": "WindowsTerminal"},
+      {"originalKeys": "164;8", "newRemapKeys": "164;8", "targetApp": "WindowsTerminal"},
+      {"originalKeys": "164;66", "newRemapKeys": "164;66", "targetApp": "WindowsTerminal"},
+      {"originalKeys": "164;70", "newRemapKeys": "164;70", "targetApp": "WindowsTerminal"}
+    ]
+  }
+}
