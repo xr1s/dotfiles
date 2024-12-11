@@ -300,7 +300,7 @@ zinit wait lucid as'completion' for \
 function() {
   local ZSH_LOCAL_FPATH="$HOME/.local/share/zsh/functions/Completion"
   [[ -f "$ZSH_LOCAL_FPATH/_pdm" ]] \
-    && zinit wait lucid is-snippet wait'[[ -f .pdm.toml ]]' atload'source <(pdm completion zsh | head -n -3); compdef _pdm pdm' for "$ZSH_LOCAL_FPATH/_pdm"
+    && zinit wait lucid is-snippet wait'[[ -f pyproject.toml ]]' atload'source <(pdm completion zsh | head -n -3); compdef _pdm pdm' for "$ZSH_LOCAL_FPATH/_pdm"
   [[ -f "$ZSH_LOCAL_FPATH/_rustup" ]] \
     && zinit wait lucid is-snippet has'rg' atload'source <(rustup completions zsh rustup); compdef _rustup rustup' for "$ZSH_LOCAL_FPATH/_rustup"
   [[ -f "$ZSH_LOCAL_FPATH/_rg" ]] \
