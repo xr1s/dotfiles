@@ -84,6 +84,9 @@ fi
 # Autotools {{{
 (( $+commands[m4] )) && export M4="$commands[m4]"
 # }}}
+# Docker {{{
+create-completion-placeholders docker
+# }}}
 # Go {{{
 if (( $+commands[go] )); then
   export GOPATH="$HOME/.go"
@@ -131,6 +134,9 @@ create-completion-placeholders rustup rg
 # SDKMAN {{{
 export SDKMAN_DIR="$HOME/.sdkman"
 [[ -s "$HOME/.sdkman/bin/sdkman-init.sh" ]] && : > "$HOME/.local/share/zsh/functions/Completion/_sdk"
+# }}}
+# TeXLive {{{
+export TEXMFHOME="$HOME/.local/share/texmf"
 # }}}
 # Vim {{{
 export MYVIMRC="$HOME/.vimrc"
@@ -183,7 +189,7 @@ function _zshaddhistory() {
   # 考虑到可能存在忘记安装软件，后续仍然需要记忆该历史的情况，返回 2 先缓存历史于内存中
   # $1 就是新输入的命令，这里使用 eval 来做简单语法解析（为了处理 arg0 中含有空格这类极端情况）
   # 为了防止一些关键字导致 eval 出两条语句，替换 ; 为 \; 等，noglob 防止特殊字符在 eval 中被展开
-  eval noglob set -- $(sed -E 's:[;&|<>{}\\]:\\\0:g' <<< ${1//function/})
+  eval noglob set -- $(sed -E 's:[;&|<>{}`\\]:\\\0:g' <<< ${1//function/})
   # 过滤前缀的变量定义，shift 直到拿到第一个不带等号的作为 arg0
   # FIXME: 考虑 arg0 中带有等号的情况
   # 不过这情况不好处理，目前看起来是把写出 arg0 中带等号的代码的人揍一顿效率比改代码更高
@@ -211,14 +217,14 @@ bindkey -- "$key[Down]" history-beginning-search-forward   # 下键向后搜索�
 bindkey -- '^P' history-beginning-search-backward          # C-P 向前搜索命令
 bindkey -- '^N' history-beginning-search-forward           # C-N 向后搜索命令
 bindkey -- '^H' backward-kill-word                         # C-Backspace 删除上一个单词
-bindkey -M menuselect '^[[Z' reverse-menu-complete         # 补全菜单 S-Tab 选择上一条
-bindkey '^X^E' edit-command-line                           # C-X C-E 进入编辑器编辑模式
+bindkey -- '^[[Z' reverse-menu-complete                    # 补全菜单 S-Tab 选择上一条
+bindkey -- '^X^E' edit-command-line                        # C-X C-E 进入编辑器编辑模式
 
 function expand-dots() {
   # 当光标左侧的内容包含连续三个以上点时候，递归执行替换 ... ->  ../..
   # :f 参考 zshexpn 的 Modifiers 一节，作用是反复执行后面的操作直到结果不再变化
   # s:\.\.\.:../.. 就是一个正则替换
-  [[ $LBUFFER =~ '\.\.\.+' ]] && LBUFFER=$LBUFFER:fs:\.\.\.:../..
+  [[ $LBUFFER =~ '(^| )\.\.\.+' ]] && LBUFFER=$LBUFFER:fs%\.\.\.%../..%
 }
 
 function expand-dots-then-expand-or-complete() {
@@ -279,7 +285,6 @@ zinit wait lucid for \
 zinit wait lucid as'completion' for \
   mv'838a7f1b39e81ee0c06cfa959e6e97f6152019b04e10aab719c6fb118b415253 -> _fossil' \
   https://fossil-scm.org/home/raw/838a7f1b39e81ee0c06cfa959e6e97f6152019b04e10aab719c6fb118b415253 \
-  https://github.com/docker/cli/blob/master/contrib/completion/zsh/_docker \
   as'program' atclone'compdef _gradle gradle gradlew' atpull'%atclone' \
   https://github.com/gradle/gradle-completion/blob/master/_gradle \
   https://github.com/mesonbuild/meson/blob/master/data/shell-completions/zsh/_meson \
@@ -299,20 +304,22 @@ zinit wait lucid as'completion' for \
 # 本地补全脚本
 function() {
   local ZSH_LOCAL_FPATH="$HOME/.local/share/zsh/functions/Completion"
+  [[ -f "$ZSH_LOCAL_FPATH/_docker" ]] \
+    && zinit wait lucid is-snippet atload'source <(docker completion zsh)' for "$ZSH_LOCAL_FPATH/_docker" 
+  [[ -f "$ZSH_LOCAL_FPATH/_helm" ]] \
+    && zinit wait lucid is-snippet atload'source <(helm completion zsh)' for "$ZSH_LOCAL_FPATH/_helm" 
+  [[ -f "$ZSH_LOCAL_FPATH/_kubeadm" ]] \
+    && zinit wait lucid is-snippet atload'source <(kubeadm completion zsh)' for "$ZSH_LOCAL_FPATH/_kubeadm"
+  [[ -f "$ZSH_LOCAL_FPATH/_kubectl" ]] \
+    && zinit wait lucid is-snippet atload'source <(kubectl completion zsh)' for "$ZSH_LOCAL_FPATH/_kubectl"
+  [[ -f "$ZSH_LOCAL_FPATH/_minikube" ]] \
+    && zinit wait lucid is-snippet atload'source <(minikube completion zsh)' for "$ZSH_LOCAL_FPATH/_minikube"
   [[ -f "$ZSH_LOCAL_FPATH/_pdm" ]] \
-    && zinit wait lucid is-snippet wait'[[ -f pyproject.toml ]]' atload'source <(pdm completion zsh | head -n -3); compdef _pdm pdm' for "$ZSH_LOCAL_FPATH/_pdm"
+    && zinit wait'[[ -f pyproject.toml ]]' lucid is-snippet atload'source <(pdm completion zsh | head -n -3); compdef _pdm pdm' for "$ZSH_LOCAL_FPATH/_pdm"
   [[ -f "$ZSH_LOCAL_FPATH/_rustup" ]] \
     && zinit wait lucid is-snippet has'rg' atload'source <(rustup completions zsh rustup); compdef _rustup rustup' for "$ZSH_LOCAL_FPATH/_rustup"
   [[ -f "$ZSH_LOCAL_FPATH/_rg" ]] \
     && zinit wait lucid is-snippet atload'source <(rg --generate=complete-zsh | rg --invert-match "^_rg\s"); compdef _rg rg' for "$ZSH_LOCAL_FPATH/_rg"
-  [[ -f "$ZSH_LOCAL_FPATH/_kubectl" ]] \
-    && zinit wait lucid is-snippet atload'source <(kubectl completion zsh)' for "$ZSH_LOCAL_FPATH/_kubectl"
-  [[ -f "$ZSH_LOCAL_FPATH/_kubeadm" ]] \
-    && zinit wait lucid is-snippet atload'source <(kubeadm completion zsh)' for "$ZSH_LOCAL_FPATH/_kubeadm"
-  [[ -f "$ZSH_LOCAL_FPATH/_minikube" ]] \
-    && zinit wait lucid is-snippet atload'source <(minikube completion zsh)' for "$ZSH_LOCAL_FPATH/_minikube"
-  [[ -f "$ZSH_LOCAL_FPATH/_helm" ]] \
-    && zinit wait lucid is-snippet atload'source <(helm completion zsh)' for "$ZSH_LOCAL_FPATH/_helm" 
   [[ -f "$ZSH_LOCAL_FPATH/_sdk" ]] \
     && zinit wait lucid is-snippet \
       atload'source $SDKMAN_DIR/bin/sdkman-init.sh' \
@@ -321,7 +328,6 @@ function() {
       for "$ZSH_LOCAL_FPATH/_sdk" 
 }
 # systemd 补全脚本
-# 可能是版本问题，systemctl 不支持补全脚本中的 --legend=no，因此手动替换成 --no-legend
 (( $+commands[systemctl] )) && zinit wait lucid as'completion' for \
   https://github.com/systemd/systemd/blob/main/shell-completion/zsh/_journalctl \
   as'program' atclone'sed -e"s:{{LIBEXECDIR}}:/usr/lib:g" _systemctl.in > _systemctl' atpull'%atclone' \

@@ -1,0 +1,41 @@
+[user]
+	name = xr1s
+	email = std.xris@gmail.com
+	signingkey = 2D9BEC0E101D2895F940F7508E76F97702DF0C4B
+[http]
+	proxy = localhost:7897
+
+[alias]
+	d = difftool
+	m = mergetool
+	co = checkout
+[commit]
+	gpgsign = true
+[core]
+	# 设置 quotepath 为 false
+	# 中文文件名才能正常显示
+	# 否则会显示为系统编码的转义形式
+	quotepath = false
+[diff]
+	tool = nvimdiff
+[difftool]
+	prompt = false
+[init]
+	defaultBranch = master
+[log]
+	date = iso8601
+[merge]
+	tool = nvimdiff
+[mergetool]
+	prompt = false
+[pull]
+	rebase = false
+[filter "lfs"]
+	smudge = git-lfs smudge -- %f
+	process = git-lfs filter-process
+	required = true
+	clean = git-lfs clean -- %f
+[commit]
+	gpgsign = true
+[log]
+	date = iso8601

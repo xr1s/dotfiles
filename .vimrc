@@ -38,6 +38,7 @@ Plug 'gruvbox-community/gruvbox'
 Plug 'neoclide/coc.nvim', { 'branch': 'release' }
 Plug 'ojroques/vim-oscyank'
 Plug 'preservim/nerdtree', { 'on': 'NERDTree' }
+Plug 'rickhowe/diffchar.vim'
 Plug 'ryanoasis/vim-devicons'
 Plug 'sheerun/vim-polyglot'
 Plug 'tiagofumo/vim-nerdtree-syntax-highlight', { 'on':  'NERDTree' }
@@ -55,7 +56,8 @@ augroup end
 " }}}
 
 set number
-set diffopt+=internal,algorithm:minimal
+set diffopt+=internal,algorithm:patience
+autocmd VimEnter * if &diff | execute 'windo set wrap' | endif
 
 " Leader {{{
 " 空格平时也没啥用，移动光标根本用不到
@@ -325,7 +327,7 @@ highlight link CocSemTypeTypeParameter Type
 " 修改 coc 的 virtual text 颜色，目前用的有些太突出了
 highlight CocInlayHint ctermfg=DarkGray ctermbg=NONE guifg=Gray guibg=NONE
 " coc 浮窗背景色和编辑器底色相同，无法区分边界
-highlight CocFloating ctermbg=DarkGray guibg=Gray
+highlight CocFloating ctermbg=DarkGray guibg=DimGray
 highlight CocMenuSel ctermbg=237 guibg=#3f3f3f
 
 " 补全
@@ -412,6 +414,13 @@ noremap <silent> <Leader>ls :NERDTree<CR>
 noremap <silent> <Leader>ga :Git add % <Bar> qall<CR>
 " Git checkout 并关闭文件，主要用于提交前，我会 git diff 一下所有文件
 noremap <silent> <Leader>gc :Git checkout % <Bar> qall<CR>
+" }}}
+
+" VimTex {{{
+let g:vimtex_view_general_viewer = 'SumatraPDF.exe'
+let g:vimtex_view_general_options = '-reuse-instance @pdf'
+" let g:vimtex_view_general_options_latexmk = '-reuse-instance'
+let g:tex_flavor = 'latex'
 " }}}
 
 " OSCYank {{{
