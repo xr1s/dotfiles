@@ -58,6 +58,9 @@
       {"originalKeys": "91;164;70", "newRemapKeys": "256"}
     ],
     "appSpecific": [
+      // 禁用 Telegram 的 Ctrl + Q 退出进程
+      {"originalKeys": "163;81", "newRemapKeys": "256", "targetApp": "Telegram"},
+      // 重映射上面修改过的快捷键，避免 Windows 键位不兼容 Windows Terminal
       {"originalKeys": "163;65", "newRemapKeys": "163;65", "targetApp": "WindowsTerminal"},
       {"originalKeys": "163;66", "newRemapKeys": "163;66", "targetApp": "WindowsTerminal"},
       {"originalKeys": "163;69", "newRemapKeys": "163;69", "targetApp": "WindowsTerminal"},
