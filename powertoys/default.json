@@ -49,6 +49,8 @@
       // 这块一般是对 Alt 快捷键的映射，一般是光标按单词移动的快捷键
       // 删除光标左侧的一个单词: Alt (Left) + Backspace => Ctrl (Left) + Backspace
       {"originalKeys": "164;8", "newRemapKeys": "163;8"},
+      // 删除光标右侧的一个单词: Alt (Left) + D => Ctrl (Left) + Delete
+      {"originalKeys": "164;68", "newRemapKeys": "163;46"},
       // 光标向左移动一个单词: Alt (Left) + B => Ctrl (Left) + Left
       {"originalKeys": "164;66", "newRemapKeys": "163;37"},
       // 光标向左移动一个单词: Alt (Left) + F => Ctrl (Left) + Right
@@ -58,9 +60,14 @@
       {"originalKeys": "91;164;70", "newRemapKeys": "256"}
     ],
     "appSpecific": [
-      // 禁用 Telegram 的 Ctrl + Q 退出进程
+      // Telegram 禁用 Ctrl + Q 退出程序，避免误触
+      {"originalKeys": "162;81", "newRemapKeys": "256", "targetApp": "Telegram"},
       {"originalKeys": "163;81", "newRemapKeys": "256", "targetApp": "Telegram"},
-      // 重映射上面修改过的快捷键，避免 Windows 键位不兼容 Windows Terminal
+      // Telegram 禁用 Ctrl + W 关闭窗口，避免误触
+      {"originalKeys": "162;87", "newRemapKeys": "256", "targetApp": "Telegram"},
+      {"originalKeys": "163;87", "newRemapKeys": "256", "targetApp": "Telegram"},
+
+      // WindowsTerminal 强制复写，避免上面的全局设置导致某些 Shell 快捷键无法使用
       {"originalKeys": "163;65", "newRemapKeys": "163;65", "targetApp": "WindowsTerminal"},
       {"originalKeys": "163;66", "newRemapKeys": "163;66", "targetApp": "WindowsTerminal"},
       {"originalKeys": "163;69", "newRemapKeys": "163;69", "targetApp": "WindowsTerminal"},
@@ -69,6 +76,7 @@
       {"originalKeys": "163;80", "newRemapKeys": "163;80", "targetApp": "WindowsTerminal"},
       {"originalKeys": "164;8", "newRemapKeys": "164;8", "targetApp": "WindowsTerminal"},
       {"originalKeys": "164;66", "newRemapKeys": "164;66", "targetApp": "WindowsTerminal"},
+      {"originalKeys": "164;68", "newRemapKeys": "164;68", "targetApp": "WindowsTerminal"},
       {"originalKeys": "164;70", "newRemapKeys": "164;70", "targetApp": "WindowsTerminal"}
     ]
   }

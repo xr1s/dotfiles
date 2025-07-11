@@ -207,6 +207,8 @@ zmodload zsh/complist  # 补全菜单功能和控制
 # zshbuiltin {{{
 autoload compinit
 autoload edit-command-line
+autoload select-word-style
+select-word-style bash
 # }}}
 # zshzle {{{
 zle -N edit-command-line

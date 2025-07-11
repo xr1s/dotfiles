@@ -35,6 +35,7 @@ let g:polyglot_disabled = ['c/c++', 'cpp-modern']
 
 call plug#begin('~/.vim/plugged')
 Plug 'gruvbox-community/gruvbox'
+Plug 'lervag/vimtex', { 'for': 'tex' }
 Plug 'neoclide/coc.nvim', { 'branch': 'release' }
 Plug 'ojroques/vim-oscyank'
 Plug 'preservim/nerdtree', { 'on': 'NERDTree' }
@@ -420,6 +421,9 @@ noremap <silent> <Leader>gc :Git checkout % <Bar> qall<CR>
 let g:vimtex_view_general_viewer = 'SumatraPDF.exe'
 let g:vimtex_view_general_options = '-reuse-instance @pdf'
 " let g:vimtex_view_general_options_latexmk = '-reuse-instance'
+"let g:vimtex_compiler_latexmk_engines = { 
+"  \ '_': '-xelatex',
+"  \ }
 let g:tex_flavor = 'latex'
 " }}}
 
@@ -429,4 +433,5 @@ autocmd TextYankPost * if v:event.operator is 'y' && v:event.regname is '' | exe
 " }}}
 
 nnoremap <silent> <Leader>h :CocCommand semanticTokens.inspect<CR>
+
 " vim: foldmethod=marker
