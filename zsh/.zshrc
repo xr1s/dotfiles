@@ -58,20 +58,6 @@ function() {
 }  # }}}
 
 # 各应用环境变量 {{{
-function create-completion-placeholders() {
-  # 对于一些需要动态生成补全脚本的命令，这里只生成占位符，放到后面在 zinit「本地补全脚本」部分初始化
-  # 不直接在此 source 补全脚本的原因是因为此时还没 autoload compinit && compinit，我不想打乱 zshrc 顺序
-  # 而之所以留空不直接生成补全内容，是为了在二进制更新补全脚本后能及时生效，否则只是判断文件存在就不会更新了
-  # 不每次都在这儿生成一遍补全是因为生成补全默认是阻塞的，想利用 zinit 的 turbo 模式异步初始化
-  # 不过老实说我不清楚 turbo 模式在执行生成补全命令的时候能不能起作用，如果可以最好（感觉不行，那就算了）
-  local ZSH_LOCAL_FPATH="$HOME/.local/share/zsh/functions/Completion"
-  [[ ! -d $ZSH_LOCAL_FPATH ]] && rm -f $ZSH_LOCAL_FPATH && mkdir -p $ZSH_LOCAL_FPATH
-  for bin in "$@"; do
-    if (( $+commands[$bin] )) && [[ ! -f "$ZSH_LOCAL_FPATH/_$bin" ]]; then
-      rm -rf "$ZSH_LOCAL_FPATH/_$bin" && : > "$ZSH_LOCAL_FPATH/_$bin"
-    fi
-  done
-}
 # Android {{{
 if [[ -d "$HOME/.local/opt/android-sdk" ]]; then
   export ANDROID_HOME="$HOME/.local/opt/android-sdk"
@@ -85,7 +71,6 @@ fi
 (( $+commands[m4] )) && export M4="$commands[m4]"
 # }}}
 # Docker {{{
-create-completion-placeholders docker
 # }}}
 # Go {{{
 if (( $+commands[go] )); then
@@ -114,7 +99,6 @@ if [[ $(uname) == 'Darwin' ]]; then
 fi
 # }}}
 # Kubernetes {{{
-create-completion-placeholders kubectl kubeadm minikube helm
 # }}}
 # OpenSSL {{{
 export OPENSSLDIR="$HOME/.local/opt/openssl"
@@ -125,11 +109,9 @@ path+=("$HOME/.local/lib/site_perl/bin")
 manpath+=("$HOME/.local/lib/site_perl/man")
 # }}}
 # Python {{{
-create-completion-placeholders pdm
 # }}}
 # Rust {{{
 [[ -d "$HOME/.cargo/bin" ]] && path=("$HOME/.cargo/bin" $path)
-create-completion-placeholders rustup rg
 # }}}
 # SDKMAN {{{
 export SDKMAN_DIR="$HOME/.sdkman"
@@ -153,7 +135,6 @@ fi
 source "$HOME/.local/share/zinit/zinit.git/zinit.zsh"
 autoload -Uz _zinit && (( ${+_comps} )) && _comps[zinit]=_zinit
 # }}}
-unfunction create-completion-placeholders
 # }}}
 
 # zsh 交互模式配置 {{{
@@ -270,67 +251,60 @@ zstyle    ':completion:*' cache-path \
 
 # zinit 插件 {{{
 # 提示符插件需要阻塞载入
-zinit lucid for \
-  src"$HOME/.p10k.zsh" \
-  romkatv/powerlevel10k
+zinit lucid src"$HOME/.p10k.zsh" for romkatv/powerlevel10k
 # 只要输入 make 就会试图解析 Makefile 并高亮，遇到复杂文件会直接导致命令行挂死，所以在载入时取消 make 的高亮
 zinit wait lucid for \
-  OMZP::pip \
-  pick'bin/rbenv' as'program' wait'[[ -f Gemfile ]]' atload'eval "$(bin/rbenv init - zsh)"' \
-  rbenv/rbenv \
-  pick'bin/ruby-build' as'program' \
-  rbenv/ruby-build \
-  atload'unset FAST_HIGHLIGHT\[chroma-make\]
-    FAST_HIGHLIGHT_STYLES[defaulthere-string-text]=fg=blue' \
+  atload'unset FAST_HIGHLIGHT\[chroma-make\]' \
+  atload'FAST_HIGHLIGHT_STYLES[defaulthere-string-text]=fg=blue' \
   zdharma-continuum/fast-syntax-highlighting
+zinit wait lucid for \
+  has'pip' OMZP::pip \
+  has'ruby' pick'bin/rbenv' as'program' wait'[[ -f Gemfile ]]' \
+    atload'eval "$(bin/rbenv init - zsh)"' \
+    rbenv/rbenv \
+  has'ruby' pick'bin/ruby-build' as'program' \
+    rbenv/ruby-build
 # 通用补全脚本
 zinit wait lucid as'completion' for \
-  mv'838a7f1b39e81ee0c06cfa959e6e97f6152019b04e10aab719c6fb118b415253 -> _fossil' \
-  https://fossil-scm.org/home/raw/838a7f1b39e81ee0c06cfa959e6e97f6152019b04e10aab719c6fb118b415253 \
-  as'program' atclone'compdef _gradle gradle gradlew' atpull'%atclone' \
-  https://github.com/gradle/gradle-completion/blob/master/_gradle \
-  https://github.com/mesonbuild/meson/blob/master/data/shell-completions/zsh/_meson \
-  mv'zsh-completion -> _ninja' \
-  https://github.com/ninja-build/ninja/blob/master/misc/zsh-completion \
-  https://github.com/eza-community/eza/blob/main/completions/zsh/_eza \
-  https://github.com/rust-lang/cargo/blob/master/src/etc/_cargo \
-  as'program' atclone'sed "s:{{PROJECT_EXECUTABLE}}:bat:g" bat.zsh.in > _bat' atpull'%atclone' \
-  https://github.com/sharkdp/bat/blob/master/assets/completions/bat.zsh.in \
-  https://github.com/sharkdp/fd/blob/master/contrib/completion/_fd \
-  atload'source register-completions.zsh' \
-  https://github.com/xmake-io/xmake/blob/master/xmake/scripts/completions/register-completions.zsh \
-  https://github.com/zsh-users/zsh-completions/blob/master/src/_bundle \
-  https://github.com/zsh-users/zsh-completions/blob/master/src/_cmake \
-  https://github.com/zsh-users/zsh-completions/blob/master/src/_golang \
-  https://github.com/zsh-users/zsh-completions/blob/master/src/_openssl
+  has'fossil' mv'838a7f1b39e81ee0c06cfa959e6e97f6152019b04e10aab719c6fb118b415253 -> _fossil' \
+    https://fossil-scm.org/home/raw/838a7f1b39e81ee0c06cfa959e6e97f6152019b04e10aab719c6fb118b415253 \
+  has'gradle' as'program' \
+    atclone'compdef _gradle gradle gradlew' atpull'%atclone' \
+    https://github.com/gradle/gradle-completion/blob/master/_gradle \
+  has'meson' https://github.com/mesonbuild/meson/blob/master/data/shell-completions/zsh/_meson \
+  has'ninja' mv'zsh-completion -> _ninja' \
+    https://github.com/ninja-build/ninja/blob/master/misc/zsh-completion \
+  has'eza' https://github.com/eza-community/eza/blob/main/completions/zsh/_eza \
+  has'cargo' https://github.com/rust-lang/cargo/blob/master/src/etc/_cargo \
+  has'bat' as'program' \
+    atclone'sed "s:{{PROJECT_EXECUTABLE}}:bat:g" bat.zsh.in > _bat' atpull'%atclone' \
+    https://github.com/sharkdp/bat/blob/master/assets/completions/bat.zsh.in \
+  has'fd' https://github.com/sharkdp/fd/blob/master/contrib/completion/_fd \
+  has'xmake' atload'source register-completions.zsh' \
+    https://github.com/xmake-io/xmake/blob/master/xmake/scripts/completions/register-completions.zsh \
+  has'bundle' https://github.com/zsh-users/zsh-completions/blob/master/src/_bundle \
+  has'cmake' https://github.com/zsh-users/zsh-completions/blob/master/src/_cmake \
+  has'golang' https://github.com/zsh-users/zsh-completions/blob/master/src/_golang \
+  has'openssl' https://github.com/zsh-users/zsh-completions/blob/master/src/_openssl \
 # 本地补全脚本
-function() {
-  local ZSH_LOCAL_FPATH="$HOME/.local/share/zsh/functions/Completion"
-  [[ -f "$ZSH_LOCAL_FPATH/_docker" ]] \
-    && zinit wait lucid is-snippet atload'source <(docker completion zsh)' for "$ZSH_LOCAL_FPATH/_docker" 
-  [[ -f "$ZSH_LOCAL_FPATH/_helm" ]] \
-    && zinit wait lucid is-snippet atload'source <(helm completion zsh)' for "$ZSH_LOCAL_FPATH/_helm" 
-  [[ -f "$ZSH_LOCAL_FPATH/_kubeadm" ]] \
-    && zinit wait lucid is-snippet atload'source <(kubeadm completion zsh)' for "$ZSH_LOCAL_FPATH/_kubeadm"
-  [[ -f "$ZSH_LOCAL_FPATH/_kubectl" ]] \
-    && zinit wait lucid is-snippet atload'source <(kubectl completion zsh)' for "$ZSH_LOCAL_FPATH/_kubectl"
-  [[ -f "$ZSH_LOCAL_FPATH/_minikube" ]] \
-    && zinit wait lucid is-snippet atload'source <(minikube completion zsh)' for "$ZSH_LOCAL_FPATH/_minikube"
-  [[ -f "$ZSH_LOCAL_FPATH/_pdm" ]] \
-    && zinit wait'[[ -f pyproject.toml ]]' lucid is-snippet atload'source <(pdm completion zsh | head -n -3); compdef _pdm pdm' for "$ZSH_LOCAL_FPATH/_pdm"
-  [[ -f "$ZSH_LOCAL_FPATH/_rustup" ]] \
-    && zinit wait lucid is-snippet has'rg' atload'source <(rustup completions zsh rustup); compdef _rustup rustup' for "$ZSH_LOCAL_FPATH/_rustup"
-  [[ -f "$ZSH_LOCAL_FPATH/_rg" ]] \
-    && zinit wait lucid is-snippet atload'source <(rg --generate=complete-zsh | rg --invert-match "^_rg\s"); compdef _rg rg' for "$ZSH_LOCAL_FPATH/_rg"
-  [[ -f "$ZSH_LOCAL_FPATH/_sdk" ]] \
-    && zinit wait lucid is-snippet \
-      atload'source $SDKMAN_DIR/bin/sdkman-init.sh' \
-      atload'include_path=($JAVA_HOME/include $JAVA_HOME/include/linux $include_path)' \
-      atload'ld_library_path=($JAVA_HOME/lib $JAVA_HOME/lib/server $ld_library_path)' \
-      for "$ZSH_LOCAL_FPATH/_sdk" 
-}
+zinit wait lucid as'null' for \
+  has'docker' atload'source <(docker completion zsh)' zdharma-continuum/null \
+  has'helm' atload'source <(helm completion zsh)' zdharma-continuum/null \
+  has'kubeadm' atload'source <(kubeadm completion zsh)' zdharma-continuum/null \
+  has'kubectl' atload'source <(kubectl completion zsh)' zdharma-continuum/null \
+  has'minikube' atload'source <(minikube completion zsh)' zdharma-continuum/null \
+  has'pdm' atload'source <(pdm completion zsh | grep -v "^_pdm\s"); compdef _pdm pdm' zdharma-continuum/null \
+  has'uv' atload'source <(uv generate-shell-completion zsh)' zdharma-continuum/null \
+  has'ruff' atload'source <(ruff generate-shell-completion zsh)' zdharma-continuum/null \
+  has'rg' atload'source <(rg --generate=complete-zsh | rg --invert-match "^_rg\s"); compdef _rg rg' zdharma-continuum/null \
+  has'rustup' atload'source <(rustup completions zsh); compdef _rg rg' zdharma-continuum/null \
+  has'sdk' \
+    atload'source $SDKMAN_DIR/bin/sdkman-init.sh' \
+    atload'include_path=($JAVA_HOME/include $JAVA_HOME/include/linux $include_path)' \
+    atload'ld_library_path=($JAVA_HOME/lib $JAVA_HOME/lib/server $ld_library_path)' \
+    zdharma-continuum/null \
 # systemd 补全脚本
-(( $+commands[systemctl] )) && zinit wait lucid as'completion' for \
+zinit has'systemctl' wait lucid as'completion' for \
   https://github.com/systemd/systemd/blob/main/shell-completion/zsh/_journalctl \
   as'program' atclone'sed -e"s:{{LIBEXECDIR}}:/usr/lib:g" _systemctl.in > _systemctl' atpull'%atclone' \
   https://github.com/systemd/systemd/blob/main/shell-completion/zsh/_systemctl.in
@@ -339,9 +313,9 @@ function() {
 # 自定义脚本 {{{
 (( $+commands[eza] )) && alias ls='eza --long --binary --header --time-style=long-iso'
 (( $+commands[bat] )) && alias hl='bat --paging=never --style=plain'
-(( $+commands[vim] )) && alias view="vim -R '+set nomodifiable'"
+(( $+commands[nvim] )) && alias view="nvim -R '+set nomodifiable'"
 (( $+commands[rsync] )) && alias rsync='rsync --partial --info=PROGRESS2 --protect-args'
-if uname -r | grep --ignore-case --quiet microsoft; then
+if uname -r | grep -iq microsoft; then
   function open() {
     explorer.exe "$(wslpath -w "$@")" || true
   }
@@ -358,6 +332,21 @@ function highlight-log() {
     /^Debug\>|"level":"debug"|level=debug/    { print "\033[1;35m"   $0 "\033[m"; next }
     /^Trace\>|"level":"trace"|level=trace/    { print "\033[1;36m"   $0 "\033[m"; next }
     1'
+}
+
+function frame() {
+  local FFMPEG
+  uname -r | grep -iq microsoft \
+    || FFMPEG=ffmpeg \
+    && FFMPEG=ffmpeg.exe
+  local ss ii oo
+  zparseopts -D -E -F -- \
+    {t,ss}:=ss i:=ii o:=oo \
+    || return
+  local s=${${ss[-1]}:-00:00:00}
+  local i=${${ii[-1]}:-$1}
+  local o=${${oo[-1]}:-$2}
+  ffmpeg.exe -hide_banner -loglevel error -y -ss "$s" -i "$i" -frames:v 1 "$o"
 }
 # }}}
 
