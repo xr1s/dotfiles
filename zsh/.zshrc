@@ -93,6 +93,7 @@ if [[ $(uname) == 'Darwin' ]]; then
   export HOMEBREW_CELLAR=$HOMEBREW/Cellar
   export HOMEBREW_REPOSITORY=$HOMEBREW
   path=("$HOMEBREW_PREFIX/bin" "$HOMEBREW_PREFIX/sbin" $path)
+  include_path+=("$HOMEBREW_PREFIX/include")
   manpath+=("$HOMEBREW_PREFIX/share/man")
   infopath+=("$HOMEBREW_PREFIX/share/info")
   unset HOMEBREW
@@ -101,8 +102,8 @@ fi
 # Kubernetes {{{
 # }}}
 # OpenSSL {{{
-export OPENSSLDIR="$HOME/.local/opt/openssl"
-export SSL_CERT_DIR='/etc/ssl/certs'
+# export OPENSSLDIR="$HOME/.local/opt/openssl"
+# export SSL_CERT_DIR='/etc/ssl/certs'
 # }}}
 # Perl {{{
 path+=("$HOME/.local/lib/site_perl/bin")
@@ -268,23 +269,21 @@ zinit wait lucid for \
 zinit wait lucid as'completion' for \
   has'fossil' mv'838a7f1b39e81ee0c06cfa959e6e97f6152019b04e10aab719c6fb118b415253 -> _fossil' \
     https://fossil-scm.org/home/raw/838a7f1b39e81ee0c06cfa959e6e97f6152019b04e10aab719c6fb118b415253 \
-  has'gradle' as'program' \
-    atclone'compdef _gradle gradle gradlew' atpull'%atclone' \
+  has'gradle' atclone'compdef _gradle gradle gradlew' atpull'%atclone' \
     https://github.com/gradle/gradle-completion/blob/master/_gradle \
   has'meson' https://github.com/mesonbuild/meson/blob/master/data/shell-completions/zsh/_meson \
   has'ninja' mv'zsh-completion -> _ninja' \
     https://github.com/ninja-build/ninja/blob/master/misc/zsh-completion \
   has'eza' https://github.com/eza-community/eza/blob/main/completions/zsh/_eza \
   has'cargo' https://github.com/rust-lang/cargo/blob/master/src/etc/_cargo \
-  has'bat' as'program' \
-    atclone'sed "s:{{PROJECT_EXECUTABLE}}:bat:g" bat.zsh.in > _bat' atpull'%atclone' \
+  has'bat' pick'_bat' atclone'sed "s:{{PROJECT_EXECUTABLE}}:bat:g" bat.zsh.in > _bat' atpull'%atclone' \
     https://github.com/sharkdp/bat/blob/master/assets/completions/bat.zsh.in \
   has'fd' https://github.com/sharkdp/fd/blob/master/contrib/completion/_fd \
   has'xmake' atload'source register-completions.zsh' \
     https://github.com/xmake-io/xmake/blob/master/xmake/scripts/completions/register-completions.zsh \
   has'bundle' https://github.com/zsh-users/zsh-completions/blob/master/src/_bundle \
   has'cmake' https://github.com/zsh-users/zsh-completions/blob/master/src/_cmake \
-  has'golang' https://github.com/zsh-users/zsh-completions/blob/master/src/_golang \
+  has'go' https://github.com/zsh-users/zsh-completions/blob/master/src/_golang \
   has'openssl' https://github.com/zsh-users/zsh-completions/blob/master/src/_openssl \
 # 本地补全脚本
 zinit wait lucid as'null' for \
@@ -294,10 +293,11 @@ zinit wait lucid as'null' for \
   has'kubectl' atload'source <(kubectl completion zsh)' zdharma-continuum/null \
   has'minikube' atload'source <(minikube completion zsh)' zdharma-continuum/null \
   has'pdm' atload'source <(pdm completion zsh | grep -v "^_pdm\s"); compdef _pdm pdm' zdharma-continuum/null \
-  has'uv' atload'source <(uv generate-shell-completion zsh)' zdharma-continuum/null \
   has'ruff' atload'source <(ruff generate-shell-completion zsh)' zdharma-continuum/null \
-  has'rg' atload'source <(rg --generate=complete-zsh | rg --invert-match "^_rg\s"); compdef _rg rg' zdharma-continuum/null \
+  has'uv' atload'source <(uv generate-shell-completion zsh)' zdharma-continuum/null \
   has'rustup' atload'source <(rustup completions zsh); compdef _rg rg' zdharma-continuum/null \
+  has'rg' atload'source <(rg --generate=complete-zsh | rg --invert-match "^_rg\s"); compdef _rg rg' zdharma-continuum/null \
+  has'vivid' atload'LS_COLORS=$(vivid generate gruvbox-dark-soft)' zdharma-continuum/null \
   has'sdk' \
     atload'source $SDKMAN_DIR/bin/sdkman-init.sh' \
     atload'include_path=($JAVA_HOME/include $JAVA_HOME/include/linux $include_path)' \
@@ -306,7 +306,7 @@ zinit wait lucid as'null' for \
 # systemd 补全脚本
 zinit has'systemctl' wait lucid as'completion' for \
   https://github.com/systemd/systemd/blob/main/shell-completion/zsh/_journalctl \
-  as'program' atclone'sed -e"s:{{LIBEXECDIR}}:/usr/lib:g" _systemctl.in > _systemctl' atpull'%atclone' \
+  pick'_systemctl' atclone'sed -e"s:{{LIBEXECDIR}}:/usr/lib:g" _systemctl.in > _systemctl' atpull'%atclone' \
   https://github.com/systemd/systemd/blob/main/shell-completion/zsh/_systemctl.in
 # }}}
 

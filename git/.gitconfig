@@ -1,16 +1,9 @@
-[user]
-	name = xr1s
-	email = std.xris@gmail.com
-	signingkey = 2D9BEC0E101D2895F940F7508E76F97702DF0C4B
-[http]
-	proxy = localhost:7897
-
 [alias]
 	d = difftool
 	m = mergetool
 	co = checkout
-[commit]
-	gpgsign = true
+	st = status
+	sw = switch
 [core]
 	# 设置 quotepath 为 false
 	# 中文文件名才能正常显示
@@ -21,7 +14,7 @@
 [difftool]
 	prompt = false
 [init]
-	defaultBranch = master
+	defaultbranch = master
 [log]
 	date = iso8601
 [merge]
@@ -30,12 +23,16 @@
 	prompt = false
 [pull]
 	rebase = false
+
+# 分远端仓库配置，用户名、邮箱、鉴权、签名等
+[includeif "hasconfig:remote.*.url:https://github.com/**"]
+	path = .config/git/github.gitconfig
+[includeif "hasconfig:remote.*.url:git@github.com:*/**"]
+	path = .config/git/github.gitconfig
+
+# git-lfs 插件
 [filter "lfs"]
 	smudge = git-lfs smudge -- %f
 	process = git-lfs filter-process
 	required = true
 	clean = git-lfs clean -- %f
-[commit]
-	gpgsign = true
-[log]
-	date = iso8601

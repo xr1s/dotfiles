@@ -1,0 +1,10 @@
+[user]
+	name = xr1s
+	email = std.xris@gmail.com
+	signingkey = ~/.ssh/github.pub
+[commit]
+	gpgsign = true
+[gpg]
+	format = ssh
+[http]
+	proxy = localhost:7890
