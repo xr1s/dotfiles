@@ -5,9 +5,9 @@ function proxy() {
     unset http_proxy https_proxy socks_proxy no_proxy
     unset HTTP_PROXY HTTPS_PROXY SOCKS_PROXY NO_PROXY
   else
-    export http_proxy="http://localhost:7897"
-    export https_proxy="http://localhost:7897"
-    export socks_proxy="socks5://localhost:7897"
+    export http_proxy="http://localhost:7890"
+    export https_proxy="http://localhost:7890"
+    export socks_proxy="socks5://localhost:7890"
   fi
 }  # }}}
 
@@ -86,24 +86,29 @@ if [[ $(uname) == 'Darwin' ]]; then
   export HOMEBREW_NO_AUTO_UPDATE=1
   export HOMEBREW_NO_ANALYTICS=1
   case $(uname -m) in
-    x86_64) HOMEBREW=/usr/local/homebrew;;
-    arm64)  HOMEBREW=/opt/homebrew;;
+    x86_64)
+      export HOMEBREW_PREFIX='/usr/local'
+      export HOMEBREW_CELLAR='/usr/local/Cellar'
+      export HOMEBREW_REPOSITORY='/usr/local/Homebrew'
+      ;;
+    arm64)
+      HOMEBREW=/opt/homebrew
+      export HOMEBREW_PREFIX='/opt/homebrew'
+      export HOMEBREW_CELLAR='/opt/homebrew/Cellar'
+      export HOMEBREW_REPOSITORY='/opt/homebrew'
+      ;;
   esac
-  export HOMEBREW_PREFIX=$HOMEBREW
-  export HOMEBREW_CELLAR=$HOMEBREW/Cellar
-  export HOMEBREW_REPOSITORY=$HOMEBREW
   path=("$HOMEBREW_PREFIX/bin" "$HOMEBREW_PREFIX/sbin" $path)
   include_path+=("$HOMEBREW_PREFIX/include")
   manpath+=("$HOMEBREW_PREFIX/share/man")
   infopath+=("$HOMEBREW_PREFIX/share/info")
-  unset HOMEBREW
 fi
 # }}}
 # Kubernetes {{{
 # }}}
 # OpenSSL {{{
-# export OPENSSLDIR="$HOME/.local/opt/openssl"
-# export SSL_CERT_DIR='/etc/ssl/certs'
+#export OPENSSLDIR="$HOME/.local/opt/openssl"
+#export SSL_CERT_DIR='/etc/ssl/certs'
 # }}}
 # Perl {{{
 path+=("$HOME/.local/lib/site_perl/bin")
@@ -116,7 +121,6 @@ manpath+=("$HOME/.local/lib/site_perl/man")
 # }}}
 # SDKMAN {{{
 export SDKMAN_DIR="$HOME/.sdkman"
-[[ -s "$HOME/.sdkman/bin/sdkman-init.sh" ]] && : > "$HOME/.local/share/zsh/functions/Completion/_sdk"
 # }}}
 # TeXLive {{{
 export TEXMFHOME="$HOME/.local/share/texmf"
@@ -161,8 +165,6 @@ HISTORY_IGNORE='(cd|cd *|ls|ls *|:q|q)'               # cd ls 等常见命令不
 HISTSIZE=20000                                        # 启动时加载历史数量
 SAVEHIST=10000                                        # 文件储存历史数量
 WORDCHARS=''                                          # 只有字母数字作为一个单词
-(( $+commands[vivid] )) \
-  && export LS_COLORS=$(vivid generate gruvbox-dark)  # 直接生成 LS_COLORS（dircolors 无法处理 di 和 *.di 同时存在的情况，可能是缺陷）
 export EDITOR='nvim'
 # }}}
 # zshmisc {{{
@@ -195,14 +197,14 @@ select-word-style bash
 # zshzle {{{
 zle -N edit-command-line
 
-bindkey -e                                              # Emacs 键位
-bindkey -- "$key[Up]"   history-beginning-search-backward  # 上键向前搜索命令
-bindkey -- "$key[Down]" history-beginning-search-forward   # 下键向后搜索命令
-bindkey -- '^P' history-beginning-search-backward          # C-P 向前搜索命令
-bindkey -- '^N' history-beginning-search-forward           # C-N 向后搜索命令
-bindkey -- '^H' backward-kill-word                         # C-Backspace 删除上一个单词
-bindkey -- '^[[Z' reverse-menu-complete                    # 补全菜单 S-Tab 选择上一条
-bindkey -- '^X^E' edit-command-line                        # C-X C-E 进入编辑器编辑模式
+bindkey -e                                                       # Emacs 键位
+bindkey -- "$terminfo[kcuu1]" history-beginning-search-backward  # 上键向前搜索命令
+bindkey -- "$terminfo[kcud1]" history-beginning-search-forward   # 下键向后搜索命令
+bindkey -- '^P' history-beginning-search-backward                # C-P 向前搜索命令
+bindkey -- '^N' history-beginning-search-forward                 # C-N 向后搜索命令
+bindkey -- '^H' backward-kill-word                               # C-Backspace 删除上一个单词
+bindkey -- '^[[Z' reverse-menu-complete                          # 补全菜单 S-Tab 选择上一条
+bindkey -- '^X^E' edit-command-line                              # C-X C-E 进入编辑器编辑模式
 
 function expand-dots() {
   # 当光标左侧的内容包含连续三个以上点时候，递归执行替换 ... ->  ../..
@@ -251,58 +253,82 @@ zstyle    ':completion:*' cache-path \
 # }}}
 
 # zinit 插件 {{{
-# 提示符插件需要阻塞载入
+# 提示符插件需要阻塞载入，否则第一行没有美化的 Prompt
 zinit lucid src"$HOME/.p10k.zsh" for romkatv/powerlevel10k
-# 只要输入 make 就会试图解析 Makefile 并高亮，遇到复杂文件会直接导致命令行挂死，所以在载入时取消 make 的高亮
+# 命令行高亮插件
+# 只要输入 make 就会试图解析 Makefile 并高亮，遇到复杂工程会直接导致命令行挂死，所以在载入时取消 make 的高亮
 zinit wait lucid for \
   atload'unset FAST_HIGHLIGHT\[chroma-make\]' \
-  atload'FAST_HIGHLIGHT_STYLES[defaulthere-string-text]=fg=blue' \
-  zdharma-continuum/fast-syntax-highlighting
-zinit wait lucid for \
-  has'pip' OMZP::pip \
-  has'ruby' pick'bin/rbenv' as'program' wait'[[ -f Gemfile ]]' \
+    zdharma-continuum/fast-syntax-highlighting \
+# ruby 开发环境
+zinit wait lucid has'ruby' for \
+  pick'bin/rbenv' as'program' wait'[[ -f Gemfile ]]' \
     atload'eval "$(bin/rbenv init - zsh)"' \
     rbenv/rbenv \
-  has'ruby' pick'bin/ruby-build' as'program' \
-    rbenv/ruby-build
-# 通用补全脚本
+  pick'bin/ruby-build' as'program' \
+    rbenv/ruby-build \
+# 静态补全脚本
 zinit wait lucid as'completion' for \
   has'fossil' mv'838a7f1b39e81ee0c06cfa959e6e97f6152019b04e10aab719c6fb118b415253 -> _fossil' \
-    https://fossil-scm.org/home/raw/838a7f1b39e81ee0c06cfa959e6e97f6152019b04e10aab719c6fb118b415253 \
-  has'gradle' atclone'compdef _gradle gradle gradlew' atpull'%atclone' \
+    https://fossil-scm.org/home/raw/733bfcc6eb9bbb69d1b8670eaa133166dcaac1a4b8988b73a767220bf15d0b1b \
+  has'gradle' \
     https://github.com/gradle/gradle-completion/blob/master/_gradle \
-  has'meson' https://github.com/mesonbuild/meson/blob/master/data/shell-completions/zsh/_meson \
+  has'meson' \
+    https://github.com/mesonbuild/meson/blob/master/data/shell-completions/zsh/_meson \
   has'ninja' mv'zsh-completion -> _ninja' \
     https://github.com/ninja-build/ninja/blob/master/misc/zsh-completion \
-  has'eza' https://github.com/eza-community/eza/blob/main/completions/zsh/_eza \
-  has'cargo' https://github.com/rust-lang/cargo/blob/master/src/etc/_cargo \
-  has'bat' pick'_bat' atclone'sed "s:{{PROJECT_EXECUTABLE}}:bat:g" bat.zsh.in > _bat' atpull'%atclone' \
-    https://github.com/sharkdp/bat/blob/master/assets/completions/bat.zsh.in \
-  has'fd' https://github.com/sharkdp/fd/blob/master/contrib/completion/_fd \
+  has'eza' \
+    https://github.com/eza-community/eza/blob/main/completions/zsh/_eza \
+  has'fd' \
+    https://github.com/sharkdp/fd/blob/master/contrib/completion/_fd \
+  has'cargo' \
+    https://github.com/rust-lang/cargo/blob/master/src/etc/_cargo \
   has'xmake' atload'source register-completions.zsh' \
     https://github.com/xmake-io/xmake/blob/master/xmake/scripts/completions/register-completions.zsh \
-  has'bundle' https://github.com/zsh-users/zsh-completions/blob/master/src/_bundle \
-  has'cmake' https://github.com/zsh-users/zsh-completions/blob/master/src/_cmake \
-  has'go' https://github.com/zsh-users/zsh-completions/blob/master/src/_golang \
-  has'openssl' https://github.com/zsh-users/zsh-completions/blob/master/src/_openssl \
-# 本地补全脚本
+  has'bundle' \
+    https://github.com/zsh-users/zsh-completions/blob/master/src/_bundle \
+  has'cmake' \
+    https://github.com/zsh-users/zsh-completions/blob/master/src/_cmake \
+  has'go' \
+    https://github.com/zsh-users/zsh-completions/blob/master/src/_golang \
+  has'openssl' \
+    https://github.com/zsh-users/zsh-completions/blob/master/src/_openssl \
+# 生成补全脚本
 zinit wait lucid as'null' for \
-  has'docker' atload'source <(docker completion zsh)' zdharma-continuum/null \
-  has'helm' atload'source <(helm completion zsh)' zdharma-continuum/null \
-  has'kubeadm' atload'source <(kubeadm completion zsh)' zdharma-continuum/null \
-  has'kubectl' atload'source <(kubectl completion zsh)' zdharma-continuum/null \
-  has'minikube' atload'source <(minikube completion zsh)' zdharma-continuum/null \
-  has'pdm' atload'source <(pdm completion zsh | grep -v "^_pdm\s"); compdef _pdm pdm' zdharma-continuum/null \
-  has'ruff' atload'source <(ruff generate-shell-completion zsh)' zdharma-continuum/null \
-  has'uv' atload'source <(uv generate-shell-completion zsh)' zdharma-continuum/null \
-  has'rustup' atload'source <(rustup completions zsh); compdef _rg rg' zdharma-continuum/null \
-  has'rg' atload'source <(rg --generate=complete-zsh | rg --invert-match "^_rg\s"); compdef _rg rg' zdharma-continuum/null \
-  has'vivid' atload'LS_COLORS=$(vivid generate gruvbox-dark-soft)' zdharma-continuum/null \
+  has'docker' \
+    atload'source <(docker completion zsh)' zdharma-continuum/null \
+  has'helm' \
+    atload'source <(helm completion zsh)' zdharma-continuum/null \
+  has'kubeadm' \
+    atload'source <(kubeadm completion zsh)' zdharma-continuum/null \
+  has'kubectl' \
+    atload'source <(kubectl completion zsh)' zdharma-continuum/null \
+  has'minikube' \
+    atload'source <(minikube completion zsh)' zdharma-continuum/null \
+  has'pip' \
+    atload'source <(pip completion --zsh)' zdharma-continuum/null \
+  has'pdm' \
+    atload'source <(pdm completion zsh | grep -v "^_pdm\s"); compdef _pdm pdm' zdharma-continuum/null \
+  has'ruff' \
+    atload'source <(ruff generate-shell-completion zsh)' zdharma-continuum/null \
+  has'uv' \
+    atload'source <(uv generate-shell-completion zsh)' zdharma-continuum/null \
+  has'rustup' \
+    atload'source <(rustup completions zsh)' zdharma-continuum/null \
+  has'rg' \
+    atload'source <(rg --generate=complete-zsh | rg --invert-match "^_rg\s"); compdef _rg rg' zdharma-continuum/null \
+  has'bat' \
+    atload'source <(bat --completion zsh | grep -Ev "^\s+_bat_main$"); compdef _bat_main bat' zdharma-continuum/null \
+  has'typst' \
+    atload'source <(typst completions zsh)' zdharma-continuum/null \
+# 一些依赖程序存在的环境变量设置
+zinit wait lucid for \
+  has'vivid' \
+    atload'LS_COLORS=$(vivid generate gruvbox-dark-soft)' zdharma-continuum/null \
   has'sdk' \
-    atload'source $SDKMAN_DIR/bin/sdkman-init.sh' \
     atload'include_path=($JAVA_HOME/include $JAVA_HOME/include/linux $include_path)' \
     atload'ld_library_path=($JAVA_HOME/lib $JAVA_HOME/lib/server $ld_library_path)' \
-    zdharma-continuum/null \
+    atload'source $SDKMAN_DIR/bin/sdkman-init.sh' zdharma-continuum/null \
 # systemd 补全脚本
 zinit has'systemctl' wait lucid as'completion' for \
   https://github.com/systemd/systemd/blob/main/shell-completion/zsh/_journalctl \
@@ -337,8 +363,8 @@ function highlight-log() {
 function frame() {
   local FFMPEG
   uname -r | grep -iq microsoft \
-    || FFMPEG=ffmpeg \
-    && FFMPEG=ffmpeg.exe
+    && FFMPEG=ffmpeg.exe \
+    || FFMPEG=ffmpeg
   local ss ii oo
   zparseopts -D -E -F -- \
     {t,ss}:=ss i:=ii o:=oo \
@@ -346,8 +372,9 @@ function frame() {
   local s=${${ss[-1]}:-00:00:00}
   local i=${${ii[-1]}:-$1}
   local o=${${oo[-1]}:-$2}
-  ffmpeg.exe -hide_banner -loglevel error -y -ss "$s" -i "$i" -frames:v 1 "$o"
+  $FFMPEG -hide_banner -loglevel error -y -ss "$s" -i "$i" -frames:v 1 "$o"
 }
+
 # }}}
 
 # vim: foldmethod=marker
