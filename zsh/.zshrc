@@ -197,14 +197,14 @@ select-word-style bash
 # zshzle {{{
 zle -N edit-command-line
 
-bindkey -e                                                       # Emacs 键位
-bindkey -- "$terminfo[kcuu1]" history-beginning-search-backward  # 上键向前搜索命令
-bindkey -- "$terminfo[kcud1]" history-beginning-search-forward   # 下键向后搜索命令
-bindkey -- '^P' history-beginning-search-backward                # C-P 向前搜索命令
-bindkey -- '^N' history-beginning-search-forward                 # C-N 向后搜索命令
-bindkey -- '^H' backward-kill-word                               # C-Backspace 删除上一个单词
-bindkey -- '^[[Z' reverse-menu-complete                          # 补全菜单 S-Tab 选择上一条
-bindkey -- '^X^E' edit-command-line                              # C-X C-E 进入编辑器编辑模式
+bindkey -e                                           # Emacs 键位
+bindkey -- '^[[A' history-beginning-search-backward  # 上键向前搜索命令
+bindkey -- '^[[B' history-beginning-search-forward   # 下键向后搜索命令
+bindkey -- '^P'   history-beginning-search-backward  # C-P 向前搜索命令
+bindkey -- '^N'   history-beginning-search-forward   # C-N 向后搜索命令
+bindkey -- '^H'   backward-kill-word                 # C-Backspace 删除上一个单词
+bindkey -- '^[[Z' reverse-menu-complete              # 补全菜单 S-Tab 选择上一条
+bindkey -- '^X^E' edit-command-line                  # C-X C-E 进入编辑器编辑模式
 
 function expand-dots() {
   # 当光标左侧的内容包含连续三个以上点时候，递归执行替换 ... ->  ../..
@@ -259,6 +259,7 @@ zinit lucid src"$HOME/.p10k.zsh" for romkatv/powerlevel10k
 # 只要输入 make 就会试图解析 Makefile 并高亮，遇到复杂工程会直接导致命令行挂死，所以在载入时取消 make 的高亮
 zinit wait lucid for \
   atload'unset FAST_HIGHLIGHT\[chroma-make\]' \
+  atload'FAST_HIGHLIGHT_STYLES[defaulthere-string-text]=fg=blue' \
     zdharma-continuum/fast-syntax-highlighting \
 # ruby 开发环境
 zinit wait lucid has'ruby' for \
@@ -269,7 +270,7 @@ zinit wait lucid has'ruby' for \
     rbenv/ruby-build \
 # 静态补全脚本
 zinit wait lucid as'completion' for \
-  has'fossil' mv'838a7f1b39e81ee0c06cfa959e6e97f6152019b04e10aab719c6fb118b415253 -> _fossil' \
+  has'fossil' mv'733bfcc6eb9bbb69d1b8670eaa133166dcaac1a4b8988b73a767220bf15d0b1b -> _fossil' \
     https://fossil-scm.org/home/raw/733bfcc6eb9bbb69d1b8670eaa133166dcaac1a4b8988b73a767220bf15d0b1b \
   has'gradle' \
     https://github.com/gradle/gradle-completion/blob/master/_gradle \
@@ -289,6 +290,8 @@ zinit wait lucid as'completion' for \
     https://github.com/zsh-users/zsh-completions/blob/master/src/_bundle \
   has'cmake' \
     https://github.com/zsh-users/zsh-completions/blob/master/src/_cmake \
+  has'clang-format' \
+    https://github.com/zsh-users/zsh-completions/blob/master/src/_clang-format \
   has'go' \
     https://github.com/zsh-users/zsh-completions/blob/master/src/_golang \
   has'openssl' \
