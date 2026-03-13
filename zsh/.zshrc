@@ -114,6 +114,10 @@ fi
 path+=("$HOME/.local/lib/site_perl/bin")
 manpath+=("$HOME/.local/lib/site_perl/man")
 # }}}
+# PNPM {{{
+export PNPM_HOME="$HOME/.local/share/pnpm"
+path=($PNPM_HOME $path)
+# }}}
 # Python {{{
 # }}}
 # Rust {{{
@@ -195,16 +199,21 @@ autoload select-word-style
 select-word-style bash
 # }}}
 # zshzle {{{
+# 进入 Application 模式以使 $terminfo 生效
+function zle-line-init()   { echoti smkx }
+function zle-line-finish() { echoti rmkx }
+zle -N zle-line-init
+zle -N zle-line-finish
 zle -N edit-command-line
 
-bindkey -e                                           # Emacs 键位
-bindkey -- '^[[A' history-beginning-search-backward  # 上键向前搜索命令
-bindkey -- '^[[B' history-beginning-search-forward   # 下键向后搜索命令
-bindkey -- '^P'   history-beginning-search-backward  # C-P 向前搜索命令
-bindkey -- '^N'   history-beginning-search-forward   # C-N 向后搜索命令
-bindkey -- '^H'   backward-kill-word                 # C-Backspace 删除上一个单词
-bindkey -- '^[[Z' reverse-menu-complete              # 补全菜单 S-Tab 选择上一条
-bindkey -- '^X^E' edit-command-line                  # C-X C-E 进入编辑器编辑模式
+bindkey -e                                                       # Emacs 键位
+bindkey -- "$terminfo[kcuu1]" history-beginning-search-backward  # 上键向前搜索命令
+bindkey -- "$terminfo[kcud1]" history-beginning-search-forward   # 下键向后搜索命令
+bindkey -- '^P'   history-beginning-search-backward              # C-P 向前搜索命令
+bindkey -- '^N'   history-beginning-search-forward               # C-N 向后搜索命令
+bindkey -- '^H'   backward-kill-word                             # C-Backspace 删除上一个单词
+bindkey -- '^[[Z' reverse-menu-complete                          # 补全菜单 S-Tab 选择上一条
+bindkey -- '^X^E' edit-command-line                              # C-X C-E 进入编辑器编辑模式
 
 function expand-dots() {
   # 当光标左侧的内容包含连续三个以上点时候，递归执行替换 ... ->  ../..
@@ -324,6 +333,16 @@ zinit wait lucid as'null' for \
     atload'source <(bat --completion zsh | grep -Ev "^\s+_bat_main$"); compdef _bat_main bat' zdharma-continuum/null \
   has'typst' \
     atload'source <(typst completions zsh)' zdharma-continuum/null \
+  has'pnpm' \
+    atload'source <(pnpm completion zsh)' zdharma-continuum/null \
+  has'tsh' \
+    atload'source <(tsh --completion-script-zsh)' zdharma-continuum/null \
+  has'tctl' \
+    atload'source <(tctl --completion-script-zsh)' zdharma-continuum/null \
+  has'teleport' \
+    atload'source <(teleport --completion-script-zsh)' zdharma-continuum/null \
+  has'tbot' \
+    atload'source <(tbot --completion-script-zsh)' zdharma-continuum/null \
 # 一些依赖程序存在的环境变量设置
 zinit wait lucid for \
   has'vivid' \
@@ -334,9 +353,9 @@ zinit wait lucid for \
     atload'source $SDKMAN_DIR/bin/sdkman-init.sh' zdharma-continuum/null \
 # systemd 补全脚本
 zinit has'systemctl' wait lucid as'completion' for \
-  https://github.com/systemd/systemd/blob/main/shell-completion/zsh/_journalctl \
+    https://github.com/systemd/systemd/blob/main/shell-completion/zsh/_journalctl \
   pick'_systemctl' atclone'sed -e"s:{{LIBEXECDIR}}:/usr/lib:g" _systemctl.in > _systemctl' atpull'%atclone' \
-  https://github.com/systemd/systemd/blob/main/shell-completion/zsh/_systemctl.in
+    https://github.com/systemd/systemd/blob/main/shell-completion/zsh/_systemctl.in
 # }}}
 
 # 自定义脚本 {{{
@@ -348,6 +367,8 @@ if uname -r | grep -iq microsoft; then
   function open() {
     explorer.exe "$(wslpath -w "$@")" || true
   }
+elif [[ $(uname -o) == Android ]]; then
+  alias open=termux-open
 fi
 
 function highlight-log() {

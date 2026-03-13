@@ -198,8 +198,8 @@ xnoremap :s? :s?\v
 xnoremap :g? :g?\v
 
 " 使 n 总是正向搜索，N 总是反向搜索
-nnoremap <expr> n 'Nn'[v:searchforward] .. (&foldopen =~? 'search\\|all' ? 'zv' : '')
-nnoremap <expr> N 'nN'[v:searchforward] .. (&foldopen =~? 'search\\|all' ? 'zv' : '')
+nnoremap <expr> n 'Nn'[v:searchforward] .. (&foldopen =~? 'search\\|all' ? 'zv' : '') .. 'zz'
+nnoremap <expr> N 'nN'[v:searchforward] .. (&foldopen =~? 'search\\|all' ? 'zv' : '') .. 'zz'
 
 " 使用 * # 的时候要求大小写精确匹配
 " 同时保持 n 始终向后搜索，N 始终向前搜索，避免操作上混乱

@@ -58,7 +58,7 @@
   ],
   // 启用 neovim 自带的 semanticTokens 功能
   "semanticTokens.enable": true,
-  "http.proxy": "http://localhost:7897",
+  "http.proxy": "http://localhost:7890",
   // C++ Clangd
   "clangd.enabled": true,
   "clangd.arguments": [

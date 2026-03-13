@@ -6,5 +6,7 @@
 	gpgsign = true
 [gpg]
 	format = ssh
+[gpg "ssh"]
+	allowedsignersfile = ~/.config/git/allowed-signers
 [http]
 	proxy = localhost:7890

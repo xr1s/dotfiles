@@ -4,6 +4,7 @@
 	co = checkout
 	st = status
 	sw = switch
+	sparse-clone = clone --depth=1 --filter=blob:none --sparse
 [core]
 	# 设置 quotepath 为 false
 	# 中文文件名才能正常显示
@@ -29,6 +30,10 @@
 	path = .config/git/github.gitconfig
 [includeif "hasconfig:remote.*.url:git@github.com:*/**"]
 	path = .config/git/github.gitconfig
+
+# 默认使用 SSH 进行拉取和推送
+[url "git@github.com:"]
+	insteadof = "https://github.com/"
 
 # git-lfs 插件
 [filter "lfs"]
