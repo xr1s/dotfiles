@@ -58,6 +58,29 @@ function() {
 }  # }}}
 
 # 各应用环境变量 {{{
+# Homebrew 包管理器需要前置 {{{
+if [[ $(uname) == 'Darwin' ]]; then
+  export HOMEBREW_NO_AUTO_UPDATE=1
+  export HOMEBREW_NO_ANALYTICS=1
+  case $(uname -m) in
+    x86_64)
+      export HOMEBREW_PREFIX='/usr/local'
+      export HOMEBREW_CELLAR='/usr/local/Cellar'
+      export HOMEBREW_REPOSITORY='/usr/local/Homebrew'
+      ;;
+    arm64)
+      HOMEBREW=/opt/homebrew
+      export HOMEBREW_PREFIX='/opt/homebrew'
+      export HOMEBREW_CELLAR='/opt/homebrew/Cellar'
+      export HOMEBREW_REPOSITORY='/opt/homebrew'
+      ;;
+  esac
+  path=("$HOMEBREW_PREFIX/bin" "$HOMEBREW_PREFIX/sbin" $path)
+  include_path+=("$HOMEBREW_PREFIX/include")
+  manpath+=("$HOMEBREW_PREFIX/share/man")
+  infopath+=("$HOMEBREW_PREFIX/share/info")
+fi
+# }}}
 # Android {{{
 if [[ -d "$HOME/.local/opt/android-sdk" ]]; then
   export ANDROID_HOME="$HOME/.local/opt/android-sdk"
@@ -80,29 +103,6 @@ fi
 # }}}
 # Haskell {{{
 [[ -s "$HOME/.ghcup/env" ]] && source "$HOME/.ghcup/env"
-# }}}
-# Homebrew {{{
-if [[ $(uname) == 'Darwin' ]]; then
-  export HOMEBREW_NO_AUTO_UPDATE=1
-  export HOMEBREW_NO_ANALYTICS=1
-  case $(uname -m) in
-    x86_64)
-      export HOMEBREW_PREFIX='/usr/local'
-      export HOMEBREW_CELLAR='/usr/local/Cellar'
-      export HOMEBREW_REPOSITORY='/usr/local/Homebrew'
-      ;;
-    arm64)
-      HOMEBREW=/opt/homebrew
-      export HOMEBREW_PREFIX='/opt/homebrew'
-      export HOMEBREW_CELLAR='/opt/homebrew/Cellar'
-      export HOMEBREW_REPOSITORY='/opt/homebrew'
-      ;;
-  esac
-  path=("$HOMEBREW_PREFIX/bin" "$HOMEBREW_PREFIX/sbin" $path)
-  include_path+=("$HOMEBREW_PREFIX/include")
-  manpath+=("$HOMEBREW_PREFIX/share/man")
-  infopath+=("$HOMEBREW_PREFIX/share/info")
-fi
 # }}}
 # Kubernetes {{{
 # }}}
