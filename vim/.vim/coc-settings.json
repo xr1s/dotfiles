@@ -48,14 +48,12 @@
   // 分割正常代码和报错的特殊前缀
   "diagnostic.virtualTextPrefix": " ▪ ",
   "diagnostic.floatConfig": {
-    "focusable": false,
+    "focusable": false
   },
   "codeLens.enable": false,
   // 保存时自动格式化
   "coc.preferences.formatOnSave": true,
-  "coc.source.file.triggerCharacters": [
-    "/"
-  ],
+  "coc.source.file.triggerCharacters": ["/"],
   // 启用 neovim 自带的 semanticTokens 功能
   "semanticTokens.enable": true,
   "http.proxy": "http://localhost:7890",
@@ -69,23 +67,27 @@
     "--header-insertion=iwyu",
     "-j=64",
     "--limit-results=0",
-    "--malloc-trim",
     "--pch-storage=memory"
   ],
   "clangd.fallbackFlags": [],
   "clangd.checkUpdates": true,
   "clangd.compilationDatabaseCandidates": [
     "${workspaceFolder}",
-    "${workspaceFolder}/build"
+    "${workspaceFolder}/build",
+    "${workspaceFolder}/.vscode"
   ],
   // Java JDT
   "java.format.onType.enabled": false,
   "java.referencesCodeLens.enabled": true,
   "java.signatureHelp.enabled": true,
+  "java.compile.nullAnalysis.mode": "automatic",
+  "java.format.settings.url": "https://raw.githubusercontent.com/google/styleguide/refs/heads/gh-pages/eclipse-java-google-style.xml",
+  "java.saveActions.organizeImports": true,
   // Go GoPLS
+  "go.goplsPath": "~/.go/bin/gopls",
   "go.goplsOptions": {
     "analyses": {
-      "SA5008": false,
+      "SA5008": false
     },
     "gofumpt": true,
     "hints": {
@@ -176,57 +178,46 @@
   // Vim Vim-LSP
   "vimlsp.indexes.count": 100,
   "vimlsp.indexes.gap": 1,
+  "prettier.disableLanguages": ["php", "make"],
   "languageserver": {
     "jedi": {
       "enable": false,
-      "filetypes": [
-        "python"
-      ],
+      "filetypes": ["python"],
       "command": "jedi-language-server",
       "initializationOptions": {
         "codeAction": {
-          "enable": false,
+          "enable": false
         },
         "completion": {
-          "enable": true,
+          "enable": true
         },
         "diagnostic": {
-          "enable": false,
+          "enable": false
         },
         "hover": {
-          "enable": true,
-        },
+          "enable": true
+        }
       }
     },
     "ruff": {
       "enable": true,
-      "filetypes": [
-        "python"
-      ],
+      "filetypes": ["python"],
       "command": "ruff",
-      "args": [
-        "server"
-      ],
-      "rootPatterns": [
-        "pyproject.toml"
-      ],
+      "args": ["server"],
+      "rootPatterns": ["pyproject.toml"],
       "initializationOptions": {
         "settings": {
           "lint": {
-            "extendSelect": [
-              "I"
-            ],
+            "extendSelect": ["I"]
           },
           "organizeImports": true,
-          "lineLength": 120,
+          "lineLength": 120
         }
-      },
+      }
     },
     "tinymist": {
       "enable": true,
-      "filetypes": [
-        "typst"
-      ],
+      "filetypes": ["typst"],
       "command": "tinymist",
       "settings": {
         "formatterMode": "typstyle",
@@ -236,11 +227,11 @@
               "--data-plane-host=127.0.0.1:0",
               "--invert-colors=auto",
               "--open"
-            ],
+            ]
           }
         }
-      },
-    },
+      }
+    }
   }
 }
 // vim: foldmethod=marker

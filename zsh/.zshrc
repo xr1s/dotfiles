@@ -12,6 +12,30 @@ function proxy() {
 }  # }}}
 
 # 路径初始化 {{{
+# Homebrew 包管理器得前置 {{{
+if [[ $(uname) == 'Darwin' ]]; then
+  export HOMEBREW_NO_AUTO_UPDATE=1
+  export HOMEBREW_NO_ANALYTICS=1
+  case $(uname -m) in
+    x86_64)
+      export HOMEBREW_PREFIX='/usr/local'
+      export HOMEBREW_CELLAR='/usr/local/Cellar'
+      export HOMEBREW_REPOSITORY='/usr/local/Homebrew'
+      ;;
+    arm64)
+      HOMEBREW=/opt/homebrew
+      export HOMEBREW_PREFIX='/opt/homebrew'
+      export HOMEBREW_CELLAR='/opt/homebrew/Cellar'
+      export HOMEBREW_REPOSITORY='/opt/homebrew'
+      ;;
+  esac
+  path=("$HOMEBREW_PREFIX/bin" "$HOMEBREW_PREFIX/sbin" $path)
+  include_path+=("$HOMEBREW_PREFIX/include")
+  manpath+=("$HOMEBREW_PREFIX/share/man")
+  infopath+=("$HOMEBREW_PREFIX/share/info")
+fi
+# }}}
+
 # 映射 : 分隔的字符串格式路径到数组形式，方便后续操作
 export -U  PATH               path=("$HOME/.local/bin" $path)
 export -UT CPATH              include_path
@@ -58,29 +82,6 @@ function() {
 }  # }}}
 
 # 各应用环境变量 {{{
-# Homebrew 包管理器需要前置 {{{
-if [[ $(uname) == 'Darwin' ]]; then
-  export HOMEBREW_NO_AUTO_UPDATE=1
-  export HOMEBREW_NO_ANALYTICS=1
-  case $(uname -m) in
-    x86_64)
-      export HOMEBREW_PREFIX='/usr/local'
-      export HOMEBREW_CELLAR='/usr/local/Cellar'
-      export HOMEBREW_REPOSITORY='/usr/local/Homebrew'
-      ;;
-    arm64)
-      HOMEBREW=/opt/homebrew
-      export HOMEBREW_PREFIX='/opt/homebrew'
-      export HOMEBREW_CELLAR='/opt/homebrew/Cellar'
-      export HOMEBREW_REPOSITORY='/opt/homebrew'
-      ;;
-  esac
-  path=("$HOMEBREW_PREFIX/bin" "$HOMEBREW_PREFIX/sbin" $path)
-  include_path+=("$HOMEBREW_PREFIX/include")
-  manpath+=("$HOMEBREW_PREFIX/share/man")
-  infopath+=("$HOMEBREW_PREFIX/share/info")
-fi
-# }}}
 # Android {{{
 if [[ -d "$HOME/.local/opt/android-sdk" ]]; then
   export ANDROID_HOME="$HOME/.local/opt/android-sdk"
@@ -116,7 +117,7 @@ manpath+=("$HOME/.local/lib/site_perl/man")
 # }}}
 # PNPM {{{
 export PNPM_HOME="$HOME/.local/share/pnpm"
-path=($PNPM_HOME $path)
+path=($PNPM_HOME/bin $path)
 # }}}
 # Python {{{
 # }}}
@@ -270,13 +271,19 @@ zinit wait lucid for \
   atload'unset FAST_HIGHLIGHT\[chroma-make\]' \
   atload'FAST_HIGHLIGHT_STYLES[defaulthere-string-text]=fg=blue' \
     zdharma-continuum/fast-syntax-highlighting \
-# ruby 开发环境
+# Ruby 开发环境
 zinit wait lucid has'ruby' for \
   pick'bin/rbenv' as'program' wait'[[ -f Gemfile ]]' \
-    atload'eval "$(bin/rbenv init - zsh)"' \
+  atload'eval "$(bin/rbenv init - zsh)"' \
     rbenv/rbenv \
   pick'bin/ruby-build' as'program' \
     rbenv/ruby-build \
+# JavaScript 开发环境
+zinit wait'[[ -f "$HOME/.local/share/fnm/fnm" ]]' lucid for \
+  atload'path=($HOME/.local/share/fnm $path)' \
+  atload'source <(fnm env --shell zsh)' \
+  atload'source <(fnm completions --shell zsh)' \
+    zdharma-continuum/null \
 # 静态补全脚本
 zinit wait lucid as'completion' for \
   has'fossil' mv'733bfcc6eb9bbb69d1b8670eaa133166dcaac1a4b8988b73a767220bf15d0b1b -> _fossil' \
@@ -305,6 +312,12 @@ zinit wait lucid as'completion' for \
     https://github.com/zsh-users/zsh-completions/blob/master/src/_golang \
   has'openssl' \
     https://github.com/zsh-users/zsh-completions/blob/master/src/_openssl \
+  has'git' \
+    https://github.com/zsh-users/zsh/blob/master/Completion/Unix/Command/_git \
+  has'gpg' \
+    https://github.com/zsh-users/zsh/blob/master/Completion/Unix/Command/_gpg \
+  has'dnf' \
+    https://github.com/zsh-users/zsh/blob/master/Completion/Redhat/Command/_dnf5 \
 # 生成补全脚本
 zinit wait lucid as'null' for \
   has'docker' \
@@ -335,19 +348,11 @@ zinit wait lucid as'null' for \
     atload'source <(typst completions zsh)' zdharma-continuum/null \
   has'pnpm' \
     atload'source <(pnpm completion zsh)' zdharma-continuum/null \
-  has'tsh' \
-    atload'source <(tsh --completion-script-zsh)' zdharma-continuum/null \
-  has'tctl' \
-    atload'source <(tctl --completion-script-zsh)' zdharma-continuum/null \
-  has'teleport' \
-    atload'source <(teleport --completion-script-zsh)' zdharma-continuum/null \
-  has'tbot' \
-    atload'source <(tbot --completion-script-zsh)' zdharma-continuum/null \
 # 一些依赖程序存在的环境变量设置
 zinit wait lucid for \
   has'vivid' \
     atload'LS_COLORS=$(vivid generate gruvbox-dark-soft)' zdharma-continuum/null \
-  has'sdk' \
+  wait'[[ -f "$SDKMAN_DIR/bin/sdkman-init.sh" ]]' \
     atload'include_path=($JAVA_HOME/include $JAVA_HOME/include/linux $include_path)' \
     atload'ld_library_path=($JAVA_HOME/lib $JAVA_HOME/lib/server $ld_library_path)' \
     atload'source $SDKMAN_DIR/bin/sdkman-init.sh' zdharma-continuum/null \
