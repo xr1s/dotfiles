@@ -203,9 +203,17 @@ select-word-style bash
 # 进入 Application 模式以使 $terminfo 生效
 function zle-line-init()   { echoti smkx }
 function zle-line-finish() { echoti rmkx }
+# alt+backspace: 先按默认规则删词；如果删不动且左侧还有字符，再删一个字符
+function smart-backward-kill-word() {
+  local old="$LBUFFER"
+  [[ -z "$LBUFFER" ]] && return 0
+  zle backward-kill-word
+  [[ "$LBUFFER" == "$old" && -n "$LBUFFER" ]] && zle backward-delete-char
+}
 zle -N zle-line-init
 zle -N zle-line-finish
 zle -N edit-command-line
+zle -N smart-backward-kill-word
 
 bindkey -e                                                       # Emacs 键位
 bindkey -- "$terminfo[kcuu1]" history-beginning-search-backward  # 上键向前搜索命令
@@ -213,6 +221,8 @@ bindkey -- "$terminfo[kcud1]" history-beginning-search-forward   # 下键向后�
 bindkey -- '^P'   history-beginning-search-backward              # C-P 向前搜索命令
 bindkey -- '^N'   history-beginning-search-forward               # C-N 向后搜索命令
 bindkey -- '^H'   backward-kill-word                             # C-Backspace 删除上一个单词
+bindkey -- '^[^?' smart-backward-kill-word                       # M-Backspace 删除上一个单词/符号
+bindkey -- '^[^H' smart-backward-kill-word                       # 兼容部分终端发送 M-Ctrl-H
 bindkey -- '^[[Z' reverse-menu-complete                          # 补全菜单 S-Tab 选择上一条
 bindkey -- '^X^E' edit-command-line                              # C-X C-E 进入编辑器编辑模式
 
@@ -348,6 +358,12 @@ zinit wait lucid as'null' for \
     atload'source <(typst completions zsh)' zdharma-continuum/null \
   has'pnpm' \
     atload'source <(pnpm completion zsh)' zdharma-continuum/null \
+  has'argocd' \
+    atload'source <(argocd completion zsh)' zdharma-continuum/null \
+  has'codex' \
+    atload'source <(codex completion zsh)' zdharma-continuum/null \
+  has'zellij' \
+    atload'source <(zellij setup --generate-completion zsh | grep -v "^_zellij\s"); compdef _zellij zellij' zdharma-continuum/null \
 # 一些依赖程序存在的环境变量设置
 zinit wait lucid for \
   has'vivid' \

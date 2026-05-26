@@ -2,6 +2,8 @@
 	d = difftool
 	m = mergetool
 	co = checkout
+	cp = cherry-pick
+	pf = push --force-with-lease --force-if-includes
 	st = status
 	sw = switch
 	sparse-clone = clone --depth=1 --filter=blob:none --sparse
