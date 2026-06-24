@@ -217,7 +217,7 @@ function backward-kill-word-prefix-punctuation() {
 zle -N zle-line-init
 zle -N zle-line-finish
 zle -N edit-command-line
-zle -N backward-kill-word-prefix-punct
+zle -N backward-kill-word-prefix-punctuation
 
 bindkey -e                                                       # Emacs 键位
 bindkey -- "$terminfo[kcuu1]" history-beginning-search-backward  # 上键向前搜索命令
