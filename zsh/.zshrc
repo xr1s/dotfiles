@@ -49,7 +49,8 @@ export -UT TCLLIBPATH         tcllibpath
 export -UT CMAKE_PREFIX_PATH  prefix_path \;  # CMAKE_PREFIX_PATH 使用 ; 做分隔符
 
 # packages 里保存手动安装的包路径名
-packages=()
+packages=(
+)
 
 function() {
   # 手动安装的软件，在 $OPT 下分目录隔离安装
@@ -105,11 +106,8 @@ fi
 # Haskell {{{
 [[ -s "$HOME/.ghcup/env" ]] && source "$HOME/.ghcup/env"
 # }}}
-# Kubernetes {{{
-# }}}
-# OpenSSL {{{
-#export OPENSSLDIR="$HOME/.local/opt/openssl"
-#export SSL_CERT_DIR='/etc/ssl/certs'
+# OpenCode {{{
+export OPENCODE_EXPERIMENTAL_LSP_TOOL=true
 # }}}
 # Perl {{{
 path+=("$HOME/.local/lib/site_perl/bin")
@@ -123,6 +121,14 @@ path=($PNPM_HOME/bin $path)
 # }}}
 # Rust {{{
 [[ -d "$HOME/.cargo/bin" ]] && path=("$HOME/.cargo/bin" $path)
+# }}}
+# Skim {{{
+export SKIM_DEFAULT_COMMAND='fd --type=file --follow'
+export SKIM_DEFAULT_OPTIONS='--case=ignore'
+export SKIM_ALT_C_COMMAND='fd --type=directory --follow'
+export SKIM_CTRL_T_COMMAND='fd --type=file --follow'
+export SKIM_COMPLETION_OPTS='--preview="bat --paging=never --style=plain --color=always {}"'
+function _skim_compgen_path() { fd --follow "$1" }
 # }}}
 # SDKMAN {{{
 export SDKMAN_DIR="$HOME/.sdkman"
@@ -253,25 +259,38 @@ bindkey '^I' expand-dots-then-expand-or-complete
 bindkey '^M' expand-dots-then-accept-line
 # }}}
 # zshcompsys {{{
-compinit                                                   # 初始化补全
-zstyle    ':completion:*' list-colors                     `# 补全菜单高亮` \
-  "${(s.:.)LS_COLORS}"                                    `# 文件高亮采用 LS_COLORS 配置`
-zstyle    ':completion:*' matcher-list                    `# TODO: 拼音匹配中文` \
-  ''                                                      `# 1.  优先默认前缀匹配`  \
-  '+m:{[:lower:]}={[:upper:]}'                            `#     同时允许输入小写匹配到大写` \
-  '+m:{_-}={-_}'                                          `#     同时 _ 和 - 可以互相匹配` \
-  '+r:|[._-]=*'                                           `#     同时按 ._- 分段分别匹配` \
-  'l:|=* r:|=*'                                           `# 2.  其次子串匹配` \
-  '+m:{[:lower:]}={[:upper:]}'                            `#     同时允许输入小写匹配到大写` \
-  '+m:{_-}={-_}'                                          `#     同时 _ 和 - 可以互相匹配` \
-  '+r:|[._-]=*'                                           `#     同时按照 ._- 分段分别匹配`
-zstyle    ':completion:*' format '%F{yellow}%B%U%d%b%u%f' `# 高亮显示每块的补全类型（如目录、选项等）`
-zstyle    ':completion:*' menu select                     `# 补全无条件展示选择菜单（没有最少长度要求）`
-zstyle -e ':completion:*' special-dirs                    `# 默认情况下特殊路径 .. 不会被补全为 ../` \
-  '[[ $PREFIX = (../)#(|.|..) ]] && reply=(..)'           `# 仅当前缀全为 ../ 或除前缀外只输入了 . .. 才允许补全为 ../`
-zstyle    ':completion:*' use-cache on                    `# 开启缓存，用于优化慢速补全命令（如 gradle）`
-zstyle    ':completion:*' cache-path \
-  "${XDG_CACHE_HOME:-$HOME/.cache}/zsh"
+compinit  # 初始化补全
+# 补全菜单高亮，采用 LS_COLORS 配置
+zstyle ':completion:*' list-colors "${(s.:.)LS_COLORS}"
+# TODO: 拼音匹配中文
+# 1. 优先默认前缀匹配
+#    同时允许输入小写匹配到大写
+#    同时 _ 和 - 可以互相匹配
+#    同时按 ._- 分段，段内分别匹配
+# 2. 其次子串匹配
+#    同时允许输入小写匹配到大写
+#    同时 _ 和 - 可以互相匹配
+#    同时按 ._- 分段，段内分别匹配
+zstyle ':completion:*' matcher-list \
+  '' \
+  '+m:{[:lower:]}={[:upper:]}' \
+  '+m:{_-}={-_}' \
+  '+r:|[._-]=*' \
+  'l:|=* r:|=*' \
+  '+m:{[:lower:]}={[:upper:]}' \
+  '+m:{_-}={-_}' \
+  '+r:|[._-]=*'
+# 高亮显示每块的补全类型（如目录、选项等）
+zstyle ':completion:*' format '%F{yellow}%B%U%d%b%u%f'
+# 补全无条件展示选择菜单（没有最少长度要求）
+zstyle ':completion:*' menu select
+# 默认情况下特殊路径 .. 不会被补全为 ../
+# 仅当前缀全为 ../ 或除前缀外只输入了 . .. 才允许补全为 ../
+zstyle -e ':completion:*' special-dirs \
+  '[[ $PREFIX = (../)#(|.|..) ]] && reply=(..)'
+# 开启缓存，用于优化慢速补全命令（如 gradle）
+zstyle ':completion:*' use-cache on
+zstyle ':completion:*' cache-path "${XDG_CACHE_HOME:-$HOME/.cache}/zsh"
 # }}}
 # }}}
 
@@ -292,11 +311,15 @@ zinit wait lucid has'ruby' for \
   pick'bin/ruby-build' as'program' \
     rbenv/ruby-build \
 # JavaScript 开发环境
-zinit wait'[[ -f "$HOME/.local/share/fnm/fnm" ]]' lucid for \
-  atload'path=($HOME/.local/share/fnm $path)' \
+zinit has'fnm' lucid for \
   atload'source <(fnm env --shell zsh)' \
   atload'source <(fnm completions --shell zsh)' \
     zdharma-continuum/null \
+# Skim 本地模糊搜索功能
+zinit has'sk' lucid for \
+  atload'source <(sk --shell zsh)' \
+  pick'key-bindings.zsh' \
+    https://github.com/skim-rs/skim/blob/master/shell/key-bindings.zsh \
 # 静态补全脚本
 zinit wait lucid as'completion' for \
   has'fossil' mv'733bfcc6eb9bbb69d1b8670eaa133166dcaac1a4b8988b73a767220bf15d0b1b -> _fossil' \
@@ -361,12 +384,10 @@ zinit wait lucid as'null' for \
     atload'source <(typst completions zsh)' zdharma-continuum/null \
   has'pnpm' \
     atload'source <(pnpm completion zsh)' zdharma-continuum/null \
-  has'argocd' \
-    atload'source <(argocd completion zsh)' zdharma-continuum/null \
-  has'codex' \
-    atload'source <(codex completion zsh)' zdharma-continuum/null \
   has'zellij' \
     atload'source <(zellij setup --generate-completion zsh | grep -v "^_zellij\s"); compdef _zellij zellij' zdharma-continuum/null \
+  has'opencode' \
+    atload'source <(opencode completion)' zdharma-continuum/null \
 # 一些依赖程序存在的环境变量设置
 zinit wait lucid for \
   has'vivid' \

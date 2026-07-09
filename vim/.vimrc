@@ -35,14 +35,14 @@ let g:polyglot_disabled = ['c/c++', 'cpp-modern']
 
 call plug#begin('~/.vim/plugged')
 Plug 'gruvbox-community/gruvbox'
+Plug 'ibhagwan/fzf-lua'
 Plug 'lervag/vimtex', { 'for': 'tex' }
 Plug 'neoclide/coc.nvim', { 'branch': 'release' }
+Plug 'nvim-tree/nvim-tree.lua'
+Plug 'nvim-tree/nvim-web-devicons'
 Plug 'ojroques/vim-oscyank'
-Plug 'preservim/nerdtree', { 'on': 'NERDTree' }
 Plug 'rickhowe/diffchar.vim'
-Plug 'ryanoasis/vim-devicons'
 Plug 'sheerun/vim-polyglot'
-Plug 'tiagofumo/vim-nerdtree-syntax-highlight', { 'on':  'NERDTree' }
 Plug 'tpope/vim-fugitive'
 Plug 'vim-airline/vim-airline'
 call plug#end()
@@ -83,7 +83,9 @@ set fileencodings=UTF-8,GB18030
 " 外观主题 {{{
 set background=dark
 set termguicolors
-colorscheme gruvbox
+if has_key(g:plugs, 'gruvbox')
+  colorscheme gruvbox
+endif
 " }}}
 
 " 缩进 {{{
@@ -168,6 +170,7 @@ set smartcase
 " 不过没有高亮会有忘了之前在搜索什么的问题，待观察
 " 对于标识符类的搜索高亮，配置了光标悬浮其上时 coc 自动高亮
 set nohlsearch
+noremap <silent> <Leader>s :set hlsearch<CR>
 augroup incsearch-highlight
   autocmd!
   autocmd CmdlineEnter * set hlsearch
@@ -392,22 +395,31 @@ nnoremap <silent> <Leader>f <Plug>(coc-references)
 nnoremap <silent> <Leader>a <Plug>(coc-codeaction-line)
 " code lens
 nnoremap <silent> <Leader>len <Plug>(coc-codelens-action)
-" 开关 inlay hints
-nnoremap <silent> <Leader>t :CocCommand document.toggleInlayHint<CR>
 " 重构：rn 是 rename 的缩写
 nnoremap <silent> <Leader>rn <Plug>(coc-refactor)
 " }}}
 
-" Vim-Devicons {{{
-" 重新加载会导致 NERDTree 失去高亮，而且图标周围出现不明 [] 
-" 需要刷新一下
-if exists("g:loaded_webdevicons")
-  call webdevicons#refresh()
+" nvim-tree {{{
+if has_key(g:plugs, 'nvim-tree.lua') && isdirectory(g:plugs['nvim-tree.lua'].dir)
+  lua << EOF
+  require("nvim-tree").setup({
+    git = {
+      enable = true,
+      ignore = true,
+    },
+    renderer = {
+      group_empty = true,
+      icons = {
+        web_devicons = {
+          file = { enable = true, color = true },
+          folder = { enable = true, color = true },
+        },
+      }
+    },
+  })
+EOF
+  noremap <silent> <Leader>t :NvimTreeToggle<CR>
 endif
-" }}}
-
-" NERDTree {{{
-noremap <silent> <Leader>ls :NERDTree<CR>
 " }}}
 
 " Fugitive {{{
@@ -430,6 +442,16 @@ let g:tex_flavor = 'latex'
 " OSCYank {{{
 let g:oscyank_term = 'default'
 autocmd TextYankPost * if v:event.operator is 'y' && v:event.regname is '' | execute 'OSCYankRegister "' | endif
+" }}}
+
+" fzf-lua {{{
+if has_key(g:plugs, 'fzf-lua') && isdirectory(g:plugs['fzf-lua'].dir)
+  lua << EOF
+  require("fzf-lua").setup({ 'skim' })
+EOF
+noremap <silent> <Leader>p :FzfLua files<CR>
+
+endif
 " }}}
 
 nnoremap <silent> <Leader>h :CocCommand semanticTokens.inspect<CR>
