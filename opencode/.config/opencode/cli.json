@@ -1,0 +1,35 @@
+// vim: filetype=jsonc
+{
+  "$schema": "https://opencode.ai/v2/cli.json",
+  "theme": {
+    "name": "gruvbox"
+  },
+  "keybinds": {
+    "command.palette.show": "none",
+    "input.move.up": "up,ctrl+p",
+    "input.move.down": "down,ctrl+n",
+    "prompt.history.previous": "up,ctrl+p",
+    "prompt.history.next": "down,ctrl+n",
+    "prompt.editor": "<leader>ctrl+e",
+    "session.background": "<leader>ctrl+b"
+  },
+  "diffs": {
+    "wrap": "word"
+  },
+  "session": {
+    "sidebar": "auto",
+    "scrollbar": false,
+    "thinking": "hide",
+    "markdown": "rendered",
+    "permissions": "prompt",
+    "image_preview": true
+  },
+  "animations": true,
+  "prompt": {
+    "image_preview": true
+  },
+  "tabs": {
+    "layout": "horizontal",
+    "enabled": false
+  }
+}

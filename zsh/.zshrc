@@ -335,7 +335,7 @@ zinit wait lucid as'completion' for \
   has'fd' \
     https://github.com/sharkdp/fd/blob/master/contrib/completion/_fd \
   has'cargo' \
-    https://github.com/rust-lang/cargo/blob/master/src/etc/_cargo \
+    https://github.com/rust-lang/cargo/blob/master/etc/_cargo \
   has'xmake' atload'source register-completions.zsh' \
     https://github.com/xmake-io/xmake/blob/master/xmake/scripts/completions/register-completions.zsh \
   has'bundle' \
@@ -370,10 +370,6 @@ zinit wait lucid as'null' for \
     atload'source <(pip completion --zsh)' zdharma-continuum/null \
   has'pdm' \
     atload'source <(pdm completion zsh | grep -v "^_pdm\s"); compdef _pdm pdm' zdharma-continuum/null \
-  has'ruff' \
-    atload'source <(ruff generate-shell-completion zsh)' zdharma-continuum/null \
-  has'uv' \
-    atload'source <(uv generate-shell-completion zsh)' zdharma-continuum/null \
   has'rustup' \
     atload'source <(rustup completions zsh)' zdharma-continuum/null \
   has'rg' \
@@ -387,7 +383,9 @@ zinit wait lucid as'null' for \
   has'zellij' \
     atload'source <(zellij setup --generate-completion zsh | grep -v "^_zellij\s"); compdef _zellij zellij' zdharma-continuum/null \
   has'opencode' \
-    atload'source <(opencode completion)' zdharma-continuum/null \
+    atload'source <(opencode --completions zsh)' zdharma-continuum/null \
+  has'glab' \
+    atload'source <(glab completion --shell zsh)' zdharma-continuum/null
 # 一些依赖程序存在的环境变量设置
 zinit wait lucid for \
   has'vivid' \
@@ -408,6 +406,7 @@ zinit has'systemctl' wait lucid as'completion' for \
 (( $+commands[bat] )) && alias hl='bat --paging=never --style=plain'
 (( $+commands[nvim] )) && alias view="nvim -R '+set nomodifiable'"
 (( $+commands[rsync] )) && alias rsync='rsync --partial --info=PROGRESS2 --protect-args'
+(( $+commands[opencode] )) && alias oc=opencode
 if uname -r | grep -iq microsoft; then
   function open() {
     explorer.exe "$(wslpath -w "$@")" || true

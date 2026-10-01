@@ -1,0 +1,98 @@
+// vim: filetype=jsonc
+{
+  "$schema": "https://opencode.ai/config.json",
+  "plugins": ["opencode-zmllmgw@0.0.4", "opencode-cursor-sdk@0.0.1"],
+  "providers": {
+    "zmllmgw": {
+      "package": "opencode-zmllmgw@0.0.4"
+    },
+    "cursor": {
+      "package": "aisdk:opencode-cursor-sdk@0.0.1",
+      "name": "Cursor"
+    }
+  },
+  "permission": {
+    "lsp": "allow",
+    "websearch": "allow",
+    "webfetch": "allow",
+    "read": {
+      "/tmp/**": "allow",
+      "/private/tmp/**": "allow",
+      "/var/folders/**": "allow",
+      "/private/var/folders/**": "allow",
+      // 主要工作目录
+      "~/Workspace/**": "allow",
+      // Java jar 包缓存，反编译用
+      "~/.gradle/caches/modules-2/files-2.1/**": "allow",
+      // Cursor SDK 的 Tool 调用输出
+      "~/.cursor/projects/*/agent-tools/*": "allow",
+      "~/.cursor/projects/*/terminals/*": "allow"
+    },
+    "edit": {
+      "/tmp/**": "allow",
+      "/private/tmp/**": "allow",
+      "/var/folders/**": "allow",
+      "/private/var/folders/**": "allow",
+      "~/.gradle/caches/modules-2/files-2.1/**": "deny",
+      "~/.cursor/projects/*/agent-tools/*": "deny",
+      "~/.cursor/projects/*/terminals/*": "deny"
+    },
+    "external_directory": {
+      "/tmp/**": "allow",
+      "/private/tmp/**": "allow",
+      "/var/folders/**": "allow",
+      "/private/var/folders/**": "allow",
+      "~/Workspace/**": "allow",
+      "~/.gradle/caches/modules-2/files-2.1/**": "allow",
+      "~/.cursor/projects/*/agent-tools/*": "allow",
+      "~/.cursor/projects/*/terminals/*": "allow"
+    }
+  },
+  "lsp": {
+    "jdtls": {
+      "extensions": [".java"],
+      "command": [
+        "jdtls",
+        "--jvm-arg=-javaagent:$HOME/.local/share/jar/lombok.jar",
+        "--jvm-arg=-Djava.import.generatesMetadataFilesAtProjectRoot=false"
+      ],
+      "env": {
+        "JAVA_HOME": "$HOME/.sdkman/candidates/java/current"
+      },
+      "initialization": {
+        "settings": {
+          "java": {
+            "settings": { "url": "$HOME/.vim/jdt-nullness.prefs" },
+            "compile": {
+              "nullAnalysis": {
+                "mode": "automatic",
+                "nonnull": ["org.jspecify.annotations.NonNull"],
+                "nullable": ["org.jspecify.annotations.Nullable"],
+                "nonnullbydefault": ["org.jspecify.annotations.NullMarked"]
+              }
+            },
+            "import": {
+              "gradle": { "enabled": true },
+              "maven": { "enabled": true }
+            },
+            "referencesCodeLens": { "enabled": true },
+            "signatureHelp": { "enabled": true },
+            "implementationCodeLens": "all",
+            "format": { "enabled": false }
+          }
+        },
+        "extendedClientCapabilities": {
+          "classFileContentsSupport": true,
+          "clientHoverProvider": true,
+          "clientDocumentSymbolProvider": true,
+          "executeClientCommandSupport": true
+        }
+      }
+    },
+    "kotlin-lsp": {
+      "extensions": [".kt", ".kts", ".java"],
+      "command": ["intellij-server", "--stdio"],
+      "initialization": {}
+    }
+  }
+}

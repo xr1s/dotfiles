@@ -57,6 +57,9 @@
   // 启用 neovim 自带的 semanticTokens 功能
   "semanticTokens.enable": true,
   "http.proxy": "http://localhost:7890",
+  // LSP 3.17 的 pull diagnostic
+  "pullDiagnostic.onChange": true,
+  "pullDiagnostic.onSave": true,
   // C++ Clangd
   "clangd.enabled": true,
   "clangd.arguments": [
@@ -76,13 +79,6 @@
     "${workspaceFolder}/build",
     "${workspaceFolder}/.vscode"
   ],
-  // Java JDT
-  "java.format.onType.enabled": false,
-  "java.referencesCodeLens.enabled": true,
-  "java.signatureHelp.enabled": true,
-  "java.compile.nullAnalysis.mode": "automatic",
-  "java.format.settings.url": "https://raw.githubusercontent.com/google/styleguide/refs/heads/gh-pages/eclipse-java-google-style.xml",
-  "java.saveActions.organizeImports": true,
   // Go GoPLS
   "go.goplsPath": "~/.go/bin/gopls",
   "go.goplsOptions": {
@@ -178,27 +174,8 @@
   // Vim Vim-LSP
   "vimlsp.indexes.count": 100,
   "vimlsp.indexes.gap": 1,
-  "prettier.disableLanguages": ["php", "make"],
+  "prettier.disableLanguages": ["java", "cpp", "php", "make"],
   "languageserver": {
-    "jedi": {
-      "enable": false,
-      "filetypes": ["python"],
-      "command": "jedi-language-server",
-      "initializationOptions": {
-        "codeAction": {
-          "enable": false
-        },
-        "completion": {
-          "enable": true
-        },
-        "diagnostic": {
-          "enable": false
-        },
-        "hover": {
-          "enable": true
-        }
-      }
-    },
     "ruff": {
       "enable": true,
       "filetypes": ["python"],
@@ -231,6 +208,59 @@
           }
         }
       }
+    },
+    "make-language-server": {
+      "enable": false,
+      "filetypes": ["make"],
+      "command": "make-language-server"
+    },
+    "jdtls": {
+      "filetypes": ["java"],
+      "additionalSchemes": ["jdt"],
+      "command": "jdtls",
+      "args": [
+        "--jvm-arg=-javaagent:$HOME/.local/share/jar/lombok.jar",
+        "--jvm-arg=-Djava.import.generatesMetadataFilesAtProjectRoot=false"
+      ],
+      "env": {
+        "JAVA_HOME": "$HOME/.sdkman/candidates/java/current"
+      },
+      "initializationOptions": {
+        "settings": {
+          "java": {
+            "settings": { "url": "/Users/xris/.vim/jdt-nullness.prefs" },
+            "compile": {
+              "nullAnalysis": {
+                "mode": "automatic",
+                "nonnull": ["org.jspecify.annotations.NonNull"],
+                "nullable": ["org.jspecify.annotations.Nullable"],
+                "nonnullbydefault": ["org.jspecify.annotations.NullMarked"]
+              }
+            },
+            "import": {
+              "gradle": { "enabled": true },
+              "maven": { "enabled": true }
+            },
+            "referencesCodeLens": { "enabled": true },
+            "signatureHelp": { "enabled": true },
+            "implementationCodeLens": "all",
+            "format": { "enabled": false }
+          }
+        },
+        "extendedClientCapabilities": {
+          "classFileContentsSupport": true,
+          "clientHoverProvider": true,
+          "clientDocumentSymbolProvider": true,
+          "executeClientCommandSupport": true
+        }
+      }
+    },
+    "kotlin-lsp": {
+      "filetypes": ["kotlin", "java"],
+      "command": "intellij-server",
+      "rootPatterns": ["settings.gradle", "settings.gradle.kts"],
+      "args": ["--stdio"],
+      "initializationOptions": {}
     }
   }
 }

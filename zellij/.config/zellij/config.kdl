@@ -1,4 +1,17 @@
 // vim: filetype=kdl
+
+// 相邻 pane 边界不合并
+pane_frames true
+pane_frame_style "full"
+
+// 禁止 Ctrl+滚轮 缩放 Pane 大小
+// 避免系统平滑滚动导致放开滚轮后仍然在继续滚动
+// 因误触或快捷键带 Ctrl 导致 Pane 剧烈缩放
+mouse_scroll_resize false
+
+// 支持图片协议
+support_kitty_graphics_protocol true
+
 keybinds clear-defaults=true {
     shared_except "normal" {
         bind "Ctrl [" "Ctrl c" "Esc" { SwitchToMode "normal"; }
@@ -129,7 +142,6 @@ keybinds clear-defaults=true {
         bind "Alt =" { Resize "Increase"; }
         bind "Alt [" { PreviousSwapLayout; }
         bind "Alt ]" { NextSwapLayout; }
-        bind "Ctrl g" { SwitchToMode "locked"; }
         bind "Alt n" { NewPane; }
         bind "Alt o" { MoveTab "right"; }
         bind "Alt p" { TogglePaneInGroup; }
@@ -243,6 +255,8 @@ load_plugins {
 web_client {
     font "monospace"
 }
+
+osc133_command_selection true
  
 // Use a simplified UI without special fonts (arrow glyphs)
 // Options:
@@ -436,7 +450,7 @@ session_serialization false
 // (Requires restart)
 // Default: true (if the host terminal supports it)
 // 
-// support_kitty_keyboard_protocol false
+support_kitty_keyboard_protocol true
 // Whether to make sure a local web server is running when a new Zellij session starts.
 // This web server will allow creating new sessions and attaching to existing ones that have
 // opted in to being shared in the browser.
